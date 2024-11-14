@@ -3,11 +3,20 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/mtrifonov-design"
   },
-  "version": "0.0.29",
+  "version": "0.0.37",
   "description": "",
-  "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
-  "types": "dist/types/types.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types": "./dist/types/types.d.ts"
+    },
+    "./CanvasWindows": {
+      "import": "./dist/CanvasWindows/esm/index.js",
+      "require": "./dist/CanvasWindows/cjs/index.js",
+      "types": "./dist/CanvasWindows/types/types.d.ts"
+    }
+  },
   "scripts": {
     "build": "rollup -c --bundleConfigAsCjs",
     "test": "jest"

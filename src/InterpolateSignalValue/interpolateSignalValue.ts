@@ -7,6 +7,8 @@ import type { InterpolationFunctionContext,
 
 } from './types';
 
+import getContext from './getContext';
+
 type Project = ProjectDataStructure.PinsAndCurvesProject;
 type SignalData = ProjectDataStructure.SignalData;
 type Signal = ProjectDataStructure.Signal;
@@ -54,10 +56,21 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
             let nextPinValue = context.nextPinValue;
             let previousPinTime = context.previousPinTime;
             let previousPinValue = context.previousPinValue;
-            let linearInterpolation = context.linearInterpolation;
-            let easyLinear = context.easyLinear;
             let relativeTime = context.relativeTime;
+            let frame = context.frame;
+            let numberOfFrames = context.numberOfFrames;
+            let framesPerSecond = context.framesPerSecond;
+
             let interpolateSignalValue = context.interpolateSignalValue;
+
+            let easyLinear = context.easyLinear;
+            let easyEaseIn = context.easyEaseIn;
+            let easyEaseOut = context.easyEaseOut;
+            let easyStep = context.easyStep;
+            let easyEase = context.easyEase;
+            let easyEaseOutElastic = context.easyEaseOutElastic;
+
+
             ${nextPinFunctionString}`
         interpolationFunction = new Function("context",completeFunctionString);
         cachedFunctions[signalId+nextPinId] = {
@@ -73,25 +86,30 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
     let value = min;
     let errorLog = [];
     try {
-        value  = interpolationFunction(
-            {
-                nextPinTime,
-                nextPinValue,
-                previousPinTime,
-                previousPinValue,
-                relativeTime,
-                linearInterpolation: (a: number, b: number, t: number) => a + (b - a) * t,
-                easyLinear: () => previousPinValue + (nextPinValue - previousPinValue) * relativeTime,
-                interpolateSignalValueAtTime: (signalId: string, frame: number) => {
-                    const [resultVal,resultErrorLog] = interpolateSignalValue(project,signalId,frame,iterationCount)
-                    if (typeof resultVal === 'string') {
-                        throw new Error("Interpolation function returned string");
-                    }
-                    errorLog.push(...resultErrorLog);
-                    return resultVal;
+        const context = getContext({
+            nextPinTime,
+            nextPinValue,
+            previousPinTime,
+            previousPinValue,
+            relativeTime,
+            frame,
+            range: [min,max],
+            numberOfFrames: project.timelineData.numberOfFrames,
+            framesPerSecond: project.timelineData.framesPerSecond,
+            interpolateSignalValueAtTime: (signalName: string, frame: number) => {
+                const signalId = project.orgData.signalIds.find((signalId) => project.orgData.signalNames[signalId] === signalName);
+                if (signalId === undefined) {
+                    throw new Error("Signal not found");
                 }
-            }
-        );
+                const [resultVal,resultErrorLog] = interpolateSignalValue(project,signalId,frame,iterationCount)
+                if (typeof resultVal === 'string') {
+                    throw new Error("Interpolation function returned string");
+                }
+                errorLog.push(...resultErrorLog);
+                return resultVal;
+            },
+        });
+        value  = interpolationFunction(context);
     } catch (e : any) {
         errorLog.push({
             signalId,

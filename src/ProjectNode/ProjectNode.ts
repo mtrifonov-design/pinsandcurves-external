@@ -103,11 +103,21 @@ class HostProjectNode<Project, ProjectInstruction> extends ProjectNodeBase<Proje
 
   get initialized(): boolean {return true}
 
-  constructor(props: HostProjectNodeProps<Project, ProjectInstruction>) {
+  constructor(props: ProjectNodeProps<Project, ProjectInstruction>, worm: w.StateTimeWorm<Project, ProjectInstruction>) {
     super(props.dispatch);
-    this.worm = new w.StateTimeWorm(props.project, props.projectTransformer);
+    this.worm = worm;
     this.projectStateId = `ps${generateId()}`;
     this.dispatch({ authorId: this.authorId, authorIsHost: true, type: "hostIsConnected" });
+  }
+
+  static fromProject<Project, ProjectInstruction>( projectNodeProps: ProjectNodeProps<Project, ProjectInstruction>, project: Project) { 
+    const worm = new w.StateTimeWorm(project, projectNodeProps.projectTransformer);
+    return new HostProjectNode(projectNodeProps, worm);
+  }
+
+  static fromSerializedWorm<Project,ProjectInstruction>(projectNodeProps: ProjectNodeProps<Project, ProjectInstruction>, serializedWorm: string) {
+    const worm = w.StateTimeWorm.deserialize(serializedWorm, projectNodeProps.projectTransformer);
+    return new HostProjectNode(projectNodeProps, worm);
   }
 
   receive(e: ProjectNodeEvent<Project, ProjectInstruction>): void {

@@ -10,20 +10,30 @@ const transformer : (p:Project,i:Instruction) => Project = PinsAndCurvesProjectT
 type InterpolateSignalReturnType = InterpolateSignalValue.InterpolateSignalReturnType;
 
 
-class PACProjectControllerClass implements PACProjectController {
+class PACProjectControllerClass {
 
     projectNode : ProjectNode.HostProjectNode<Project,Instruction> | ProjectNode.ClientProjectNode<Project,Instruction>;
     connectToHost : (onConnected: Function) => void;
 
-    constructor(dispatch : ProjectNodeEventDispatcher,host: boolean,project? : Project) {
+    constructor(dispatch : ProjectNodeEventDispatcher,host: boolean,project? : Project, worm? : string) {
         if (host) {
-            if (!project) throw new Error("Project must be provided to host project controller");
-            this.projectNode = new HostProjectNode({
-                dispatch,
-                project,
-                projectTransformer: transformer
-            });
-            this.projectNode.worm.saveAsNamedState("commit");
+            if (!project && !worm) throw new Error("Project or worm must be provided to host project controller");
+            let projectNode;
+            if (project) {
+                projectNode = HostProjectNode.fromProject({
+                    dispatch,
+                    projectTransformer: transformer
+                },project);
+                projectNode.worm.saveAsNamedState("commit");
+            }
+            if (worm) {
+                projectNode = HostProjectNode.fromSerializedWorm({
+                    dispatch,
+                    projectTransformer: transformer
+                },worm);
+            }
+            if (!projectNode) throw new Error("Project node not created");
+            this.projectNode = projectNode;
             this.connectToHost = () => {throw new Error("Host project controller cannot connect to host")};
         } else {
             this.projectNode = new ClientProjectNode({
@@ -37,6 +47,20 @@ class PACProjectControllerClass implements PACProjectController {
 
     static Host(dispatch : ProjectNodeEventDispatcher,project : Project) {
         return new PACProjectControllerClass(dispatch,true,project);
+    }
+
+    static HostFromProject(dispatch : ProjectNodeEventDispatcher,project : Project) {
+        return new PACProjectControllerClass(dispatch,true,project);
+    }
+
+    serializeWorm() {
+        if (!this.projectNode.initialized) throw new Error("Project not initialized");
+        if (!this.projectNode.worm) throw new Error("Project node worm not found");
+        return this.projectNode.worm.serialize();
+    }
+
+    static HostFromSerializedWorm(dispatch : ProjectNodeEventDispatcher,worm : string) {
+        return new PACProjectControllerClass(dispatch,true,undefined,worm);
     }
 
     static Client(dispatch : ProjectNodeEventDispatcher) {
