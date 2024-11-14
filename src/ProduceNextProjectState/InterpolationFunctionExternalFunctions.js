@@ -1,4 +1,4 @@
-import interpolateSignalValue from '../InterpolateSignalValue/interpolateSignalValue';
+import interpolateSignalValue from '../InterpolateSignalValue/InterpolateSignalValue';
 
 const externalFunctions = {
     sin: ([time],inaccessibleExternalContext) => Math.sin(time),

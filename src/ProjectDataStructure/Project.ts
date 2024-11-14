@@ -16,10 +16,7 @@ interface TimelineData {
     playheadPosition: number;
 }
 
-interface Curve {
-    functionString: string;
-    parseError: undefined | string;
-}
+type Curve = string;
 
 interface ContinuousSignal {
     id: string;
@@ -27,13 +24,13 @@ interface ContinuousSignal {
     range: [number, number];
     pinIds: string[];
     pinTimes: {
-        [pinId: string]: number;
+        [pinId: string]: number | undefined;
     };
     pinValues: {
-        [pinId: string]: number;
+        [pinId: string]: number | undefined;
     };
     curves: {
-        [pinId: string]: Curve;
+        [pinId: string]: Curve | undefined;
     }
 }
 
@@ -42,21 +39,23 @@ interface DiscreteSignal {
     type: 'discrete';
     pinIds: string[];
     pinTimes: {
-        [pinId: string]: number;
+        [pinId: string]: number | undefined;
     };
     pinValues: {
-        [pinId: string]: string;
+        [pinId: string]: string | undefined;
     };
 }
 
+type Signal = ContinuousSignal | DiscreteSignal;
+
 interface SignalData {
-    [signalId: string]: ContinuousSignal | DiscreteSignal;
+    [signalId: string]: ContinuousSignal | DiscreteSignal | undefined;
 }
 
 interface PinsAndCurvesProject {
     metaData: {
         name: string;
-        description: string;
+        pinsAndCurvesVersion: string;
     }
     timelineData: TimelineData;
     orgData: OrgData;
@@ -70,5 +69,6 @@ export type {
     DiscreteSignal,
     ContinuousSignal, 
     SignalData,
-    PinsAndCurvesProject 
+    PinsAndCurvesProject,
+    Signal
 };

@@ -1,39 +1,52 @@
-interface Instruction {
-    type: string;
-    payload: any;
+interface Result {
+    success: boolean;
+    message: string;
 }
 
-interface EdgeInstructions {
-    backward: Instruction[],
-    forward: Instruction[],
-}
-
-
-interface StateTimeWorm {
+interface InternalWorm<Object,Instruction> {
+    namedStates: {
+        [namedState : string]: string | undefined,
+    };
+    states: {
+        [stateId: string] : {
+            forward: Instruction[],
+            backward: Instruction[],
+            nextState: string | undefined,
+            previousState: string | undefined,
+        },
+    };
+    cursor: string;
     maxSize: number;
-    cursors: {
-        [cursorId : string] : string,
-    },
-    states: string[];
-    instructions: {
-        [instructionPairId: string] : EdgeInstructions,
-    }
 }
 
-type CommandType = "getInstructions" 
-| "replaceStates"
-| "updateCursor"
-| "getCursor"
-| "addState"
-| "trimWorm"
-| "moveCursorToTargetCursor"
+type Transformer<Object,Instruction> = (object: Object, instruction: Instruction) => Object;
 
-interface WormCommand {
-    commandType: CommandType,
-    payload: any[],
+interface StateTimeWorm<Object,Instruction> {
+    content: Object;
+    next(): Result;
+    previous(): Result;
+    goToNamedState(namedState : string): Result;
+    saveAsNamedState(namedState : string): void;
+    addNextState(forward: Instruction[], backward: Instruction[]): void;
+    serialize(): string;
 }
 
+// Define a separate interface for static methods
+interface StateTimeWormConstructor<Object, Instruction> {
+    new (content: Object,
+        transformer: Transformer<Object,Instruction>,
+        existingOrMaxSize?: number | InternalWorm<Object, Instruction>
+        ): StateTimeWorm<Object, Instruction>;
+    deserialize(serialized: string, transformer: Transformer<Object,Instruction>): StateTimeWorm<Object, Instruction>;
+}
 
-export type {Instruction, EdgeInstructions, StateTimeWorm, WormCommand, CommandType}
+type WormCommand<Instruction> = 
+| { type: "next" }
+| { type: "previous" }
+| { type: "goToNamedState", namedState: string }
+| { type: "saveAsNamedState", namedState: string }
+| { type: "addNextState", forward: Instruction[], backward: Instruction[] }
+
+export type {StateTimeWorm, Result, Transformer, InternalWorm, StateTimeWormConstructor, WormCommand}
 
 

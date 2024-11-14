@@ -1,101 +1,135 @@
-import StateTimeWormManager from './StateTimeWorm';
-import { StateTimeWorm, EdgeInstructions } from './types';
+// Test suite for StateTimeWormClass
+import StateTimeWormConstructor from './StateTimeWorm';
+import { Result, Transformer, StateTimeWorm } from './types';
 
-describe('StateTimeWormManager', () => {
-    let worm: StateTimeWorm;
+type Instruction = { type: 'increment' | 'decrement', value: number };
+type Counter = { count: number };
+
+
+describe('StateTimeWormClass', () => {
+    let initialContent: { count: number };
+    let transformer: Transformer<Counter, Instruction>;
+    let stateTimeWorm: StateTimeWorm<Counter, Instruction>;
 
     beforeEach(() => {
-        worm = {
-            maxSize: 5,
-            cursors: { 'cursor1': 'state1', "cursor2": "state2" },
-            states: ['state0', 'state1', 'state2'],
-            instructions: {
-                'state0-state1': { forward: [{ type: 'fwd0-1', payload: 'test' }], backward: [{ type: 'bwd0-1', payload: 'test' }] },
-                'state1-state2': { forward: [{ type: 'fwd1-2', payload: 'test' }], backward: [{ type: 'bwd1-2', payload: 'test' }] },
+        initialContent = { count: 0 };
+        transformer = (content, instruction) => {
+            switch (instruction.type) {
+                case 'increment':
+                    return { ...content, count: content.count + instruction.value };
+                case 'decrement':
+                    return { ...content, count: content.count - instruction.value };
+                default:
+                    return content;
             }
         };
+        stateTimeWorm = new StateTimeWormConstructor(initialContent, transformer);
     });
 
-    it('getInstructions should return forward instructions', () => {
-        const instructions = StateTimeWormManager.getInstructions(worm, 'state0', 'state2');
-        expect(instructions).toEqual([{ type: 'fwd0-1', payload: 'test' }, { type: 'fwd1-2', payload: 'test' }]);
+    test('should initialize with the given content', () => {
+        expect(stateTimeWorm.content).toEqual(initialContent);
     });
 
-    it('getInstructions should return backward instructions', () => {
-        const instructions = StateTimeWormManager.getInstructions(worm, 'state2', 'state0');
-        expect(instructions).toEqual([{ type: 'bwd1-2', payload: 'test' }, { type: 'bwd0-1', payload: 'test' }]);
+    test('should serialize and deserialize correctly', () => {
+        const serialized = stateTimeWorm.serialize();
+        const deserializedWorm = StateTimeWormConstructor.deserialize(serialized, transformer);
+        expect(deserializedWorm.content).toEqual(initialContent);
+        expect(deserializedWorm.serialize()).toEqual(serialized);
     });
 
-    it('replaceStates should replace states between startState and endState', () => {
-        const edge: EdgeInstructions = { forward: [{ type: 'newFwd', payload: 'test' }], backward: [{ type: 'newBwd', payload: 'test' }] };
-        const newWorm = StateTimeWormManager.replaceStates(worm, 'state0', 'state2', edge);
-        expect(newWorm.states).toEqual(['state0', 'state2']);
-        expect(newWorm.instructions['state0-state2']).toEqual(edge);
+    test('should navigate forward correctly', () => {
+        stateTimeWorm.addNextState([{ type: 'increment', value: 5 }], [{ type: 'decrement', value: 5 }]);
+        expect(stateTimeWorm.content.count).toBe(5);
     });
 
-    it('addState should add a new state and update the cursor', () => {
-        const edge: EdgeInstructions = { forward: [{ type: 'newFwd', payload: 'test' }], backward: [{ type: 'newBwd', payload: 'test' }] };
-        const oldCursorValue = worm.cursors["cursor2"]
-        const newWorm = StateTimeWormManager.addState(worm, 'cursor2', edge);
-        expect(newWorm.states.length).toEqual(4);
-        expect(newWorm.cursors['cursor2'] !== oldCursorValue).toBe(true);
+    test('should navigate backward correctly', () => {
+        stateTimeWorm.addNextState([{ type: 'increment', value: 5 }], [{ type: 'decrement', value: 5 }]);
+        const result = stateTimeWorm.previous();
+        expect(result.success).toBe(true);
+        expect(stateTimeWorm.content.count).toBe(0);
     });
 
-    it('trimWorm should trim states to stay within maxSize', () => {
-        worm.states = ['state0', 'state1', 'state2', 'state3', 'state4', 'state5'];
-        const newWorm = StateTimeWormManager.trimWorm(worm);
-        expect(newWorm.states).toEqual(['state1', 'state2', 'state3', 'state4', 'state5']);
+    test('should return correct message if no next state is available', () => {
+        const result = stateTimeWorm.next();
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('No next state');
     });
 
-    it('updateCursor should update an existing cursor', () => {
-        const newWorm = StateTimeWormManager.updateCursor(worm, 'cursor1', 'state2');
-        expect(newWorm.cursors['cursor1']).toBe('state2');
+    test('should return correct message if no previous state is available', () => {
+        const result = stateTimeWorm.previous();
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('No previous state');
     });
 
-    it('updateCursor should delete an existing cursor', () => {
-        const newWorm = StateTimeWormManager.updateCursor(worm, 'cursor1', null);
-        expect(newWorm.cursors['cursor1']).toBeUndefined();
+    test('should save and go to named state correctly', () => {
+        stateTimeWorm.addNextState([{ type: 'increment', value: 5 }], [{ type: 'decrement', value: 5 }]);
+        stateTimeWorm.saveAsNamedState('stateA');
+        stateTimeWorm.addNextState([{ type: 'increment', value: 10 }], [{ type: 'decrement', value: 10 }]);
+        const result = stateTimeWorm.goToNamedState('stateA');
+        expect(result.success).toBe(true);
+        expect(stateTimeWorm.content.count).toBe(5);
     });
 
-    it('updateCursor should create a new cursor', () => {
-        const newWorm = StateTimeWormManager.updateCursor(worm, 'cursor2', 'state0');
-        expect(newWorm.cursors['cursor2']).toBe('state0');
+    test('should return correct message if named state is not found', () => {
+        const result = stateTimeWorm.goToNamedState('nonExistentState');
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Named state not found');
     });
 
-    it('getCursor should return the associated state id', () => {
-        const stateId = StateTimeWormManager.getCursor(worm, 'cursor1');
-        expect(stateId).toBe('state1');
+    test('should trim states correctly when adding new states beyond max size', () => {
+        stateTimeWorm = new StateTimeWormConstructor(initialContent, transformer, 2);
+        stateTimeWorm.addNextState([{ type: 'increment', value: 1 }], [{ type: 'decrement', value: 1 }]);
+        stateTimeWorm.saveAsNamedState('state1');
+        stateTimeWorm.addNextState([{ type: 'increment', value: 2 }], [{ type: 'decrement', value: 2 }]);
+        stateTimeWorm.saveAsNamedState('state2');
+        stateTimeWorm.addNextState([{ type: 'increment', value: 3 }], [{ type: 'decrement', value: 3 }]);
+        stateTimeWorm.saveAsNamedState('state3');
+
+        // After trimming, state1 should no longer exist
+        const result = stateTimeWorm.goToNamedState('state1');
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Named state not found');
     });
 
-    it('getCursor should return an empty string for invalid cursor', () => {
-        const stateId = StateTimeWormManager.getCursor(worm, 'invalidCursor');
-        expect(stateId).toBe('');
+    test('specific bug', () => {
+        stateTimeWorm = new StateTimeWormConstructor(initialContent, transformer, 100);
+        stateTimeWorm.saveAsNamedState('commit');
+
+        stateTimeWorm.goToNamedState('commit');
+        stateTimeWorm.addNextState([{ type: 'increment', value: 1 }], [{ type: 'decrement', value: 1 }]);
+
+        stateTimeWorm.goToNamedState('commit');
+        stateTimeWorm.addNextState([{ type: 'increment', value: 1 }], [{ type: 'decrement', value: 1 }]);
+
+        expect(stateTimeWorm.content.count).toBe(1);
+
     });
 
-    it('replaceStates should clean up obsolete edges', () => {
-        worm.states.push('state3');
-        worm.instructions['state2-state3'] = { forward: [{ type: 'fwd2-3', payload: 'test' }], backward: [{ type: 'bwd2-3', payload: 'test' }] };
-    
-        const edge: EdgeInstructions = { forward: [{ type: 'newFwd', payload: 'test' }], backward: [{ type: 'newBwd', payload: 'test' }] };
-        const newWorm = StateTimeWormManager.replaceStates(worm, 'state0', 'state3', edge);
-    
-        expect(newWorm.states).toEqual(['state0', 'state3']);
-        expect(newWorm.instructions['state0-state3']).toEqual(edge);
-        expect(newWorm.instructions['state1-state2']).toBeUndefined();
-        expect(newWorm.instructions['state2-state3']).toBeUndefined();
-    });
-    
-    it('addState should clean up obsolete edges', () => {
-        worm.states.push('state3');
-        worm.instructions['state2-state3'] = { forward: [{ type: 'fwd2-3', payload: 'test' }], backward: [{ type: 'bwd2-3', payload: 'test' }] };
-    
-        const edge: EdgeInstructions = { forward: [{ type: 'newFwd', payload: 'test' }], backward: [{ type: 'newBwd', payload: 'test' }] };
-        const newWorm = StateTimeWormManager.addState(worm, 'cursor1', edge);
+    test('should delete future states when adding new states', () => {
+        stateTimeWorm = new StateTimeWormConstructor(initialContent, transformer, 10);
+        stateTimeWorm.addNextState([{ type: 'increment', value: 1 }], [{ type: 'decrement', value: 1 }]);
+        stateTimeWorm.saveAsNamedState('state1');
+        stateTimeWorm.addNextState([{ type: 'increment', value: 2 }], [{ type: 'decrement', value: 2 }]);
+        stateTimeWorm.saveAsNamedState('state2');
+        stateTimeWorm.addNextState([{ type: 'increment', value: 3 }], [{ type: 'decrement', value: 3 }]);
+        stateTimeWorm.saveAsNamedState('state3');
 
-        expect(newWorm.states.length).toEqual(3);
-        expect(Object.keys(newWorm.instructions).length).toEqual(2);
-        expect(newWorm.instructions['state1-state2']).toBeUndefined();
-        expect(newWorm.instructions['state2-state3']).toBeUndefined();
+        stateTimeWorm.previous();
+        stateTimeWorm.addNextState([{ type: 'increment', value: 4 }], [{ type: 'decrement', value: 4 }]);
+        stateTimeWorm.saveAsNamedState('state4');
+
+        // After trimming, state1 should no longer exist, but state2, state3, and state4 should
+        let result = stateTimeWorm.goToNamedState('state1');
+        expect(result.success).toBe(true);
+
+        result = stateTimeWorm.goToNamedState('state2');
+        expect(result.success).toBe(true);
+
+        result = stateTimeWorm.goToNamedState('state3');
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Named state not found');
+
+        result = stateTimeWorm.goToNamedState('state4');
+        expect(result.success).toBe(true);
     });
-    
 });
