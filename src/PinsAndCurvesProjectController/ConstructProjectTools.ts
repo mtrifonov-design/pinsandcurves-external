@@ -60,7 +60,7 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
             pushUpdate()
         },
         addPinContinuous(signalId: string, pinId: string, pinTime: number, pinValue: number, functionString: string, commit?: boolean) : void {
-            returnToCommit()
+            if (commit) returnToCommit()
             pushCommand(() => {
                 return {
                     type: 'addNextState',
@@ -79,7 +79,7 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
             pushUpdate()
         },
         addPinDiscrete(signalId: string, pinId: string, pinTime: number, pinValue: string, commit?: boolean) : void {
-            returnToCommit()
+            if (commit) returnToCommit()
             pushCommand(() => {
                 return {
                     type: 'addNextState',
@@ -122,7 +122,7 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
             pushUpdate()
         },
         updatePins(pinUpdateQueue: PinUpdateQueue, commit?: boolean) : void {
-            returnToCommit()
+            if (commit) returnToCommit()
             pinUpdateQueue.forEach(pinUpdate => {
                 if (pinUpdate.pinType ==='continuous') {
                     const {pinId, pinTime, pinValue, functionString} = pinUpdate;
@@ -353,7 +353,7 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
             pushUpdate()
         },
         updateSignalIndex(signalId: string, index: number, commit?: boolean) : void {
-            returnToCommit()
+            if (commit) returnToCommit()
             pushCommand(() => {
                 const project = getProject();
                 const signal = project.signalData[signalId];
@@ -427,7 +427,7 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
             pushUpdate()
         },
         updatePlayheadPosition(playheadPosition: number, commit?: boolean) : void {
-            returnToCommit()
+            if (commit) returnToCommit()
             pushCommand(() => {
                 const project = getProject();
                 return {

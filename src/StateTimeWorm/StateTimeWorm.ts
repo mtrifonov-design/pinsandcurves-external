@@ -173,6 +173,17 @@ class StateTimeWormClass<Object,Instruction> implements StateTimeWorm<Object,Ins
             stateToDelete.forEach(state => {
                 delete this.__internal.states[state];
             });
+            statesToKeep.forEach((state, index) => {
+                const previousState = this.__internal.states[state].previousState;
+                const nextState = this.__internal.states[state].nextState;
+                if (previousState && !this.__internal.states[previousState]) {
+                    this.__internal.states[state].previousState = undefined;
+                }
+                if (nextState && !this.__internal.states[nextState]) {
+                    this.__internal.states[state].nextState = undefined;
+                }
+            });
+
         }
         {
             // Delete Unreachable Named States
