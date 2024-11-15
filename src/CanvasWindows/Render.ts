@@ -13,8 +13,9 @@ function windowsIntersect(A: Box, B: Box) {
     return true;
 }
 
-function render(camera: CanvasWindow, windows: CanvasWindow[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+function render(camera: Box, windows: CanvasWindow[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
     // Check which windows intersect with the camera
+    camera = new Box([...camera.o],camera.w,camera.h);
     windows.forEach(w => w.connectDisplay(camera,canvas));
     const intersectingWindows = windows.filter(w => windowsIntersect(w, camera));
     intersectingWindows.sort((a, b) => a.getLayer() - b.getLayer());
@@ -24,56 +25,75 @@ function render(camera: CanvasWindow, windows: CanvasWindow[], canvas: HTMLCanva
     windows.forEach(w => w.disconnectDisplay());
 }
 
-function clickHandler(camera: CanvasWindow, windows: CanvasWindow[], canvas: HTMLCanvasElement, mousePos: [number, number]) {
+function clickHandler(camera: Box, windows: CanvasWindow[], canvas: HTMLCanvasElement, mousePos: [number, number], e: MouseEvent) {
+    camera = new Box([...camera.o],camera.w,camera.h);
     windows.forEach(w => w.connectDisplay(camera,canvas));
     const intersectingWindows = windows.filter(w => windowsIntersect(w, camera));
     intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
     let running = true;
     const terminateEvent = () => {running = false;}
     for (let w of intersectingWindows) {
-        w.onClickPrimitive(mousePos,terminateEvent);
+        w.onClickPrimitive(mousePos,terminateEvent,e);
         if (!running) break;
     }
     windows.forEach(w => w.disconnectDisplay());
 }
 
-function mouseDownHandler(camera: CanvasWindow, windows: CanvasWindow[],canvas: HTMLCanvasElement, mousePos: [number, number]) {
+function mouseDownHandler(camera: Box, windows: CanvasWindow[],canvas: HTMLCanvasElement, mousePos: [number, number], e: MouseEvent) {
+    camera = new Box([...camera.o],camera.w,camera.h);
     windows.forEach(w => w.connectDisplay(camera,canvas));
     const intersectingWindows = windows.filter(w => windowsIntersect(w, camera));
     intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
     let running = true;
     const terminateEvent = () => {running = false;}
     for (let w of intersectingWindows) {
-        w.onMouseDownPrimitive(mousePos,terminateEvent);
+        w.onMouseDownPrimitive(mousePos,terminateEvent,e);
         if (!running) break;
     }
     windows.forEach(w => w.disconnectDisplay());
 }
 
-function mouseMoveHandler(camera: CanvasWindow, windows: CanvasWindow[],canvas: HTMLCanvasElement, mousePos: [number, number]) {
+function mouseMoveHandler(camera: Box, windows: CanvasWindow[],canvas: HTMLCanvasElement, mousePos: [number, number], e: MouseEvent) {
+    camera = new Box([...camera.o],camera.w,camera.h);
     windows.forEach(w => w.connectDisplay(camera,canvas));
     const intersectingWindows = windows.filter(w => windowsIntersect(w, camera));
     intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
     let running = true;
     const terminateEvent = () => {running = false;}
     for (let w of intersectingWindows) {
-        w.onMouseMovePrimitive(mousePos,terminateEvent);
+        w.onMouseMovePrimitive(mousePos,terminateEvent,e);
         if (!running) break;
     }
     windows.forEach(w => w.disconnectDisplay());
 }
 
-function mouseUpHandler(camera: CanvasWindow, windows: CanvasWindow[],canvas: HTMLCanvasElement, mousePos: [number, number]) {
+function mouseUpHandler(camera: Box, windows: CanvasWindow[],canvas: HTMLCanvasElement, mousePos: [number, number], e: MouseEvent) {
+    camera = new Box([...camera.o],camera.w,camera.h);
     windows.forEach(w => w.connectDisplay(camera,canvas));
     const intersectingWindows = windows.filter(w => windowsIntersect(w, camera));
     intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
     let running = true;
     const terminateEvent = () => {running = false;}
     for (let w of intersectingWindows) {
-        w.onMouseUpPrimitive(mousePos,terminateEvent);
+        w.onMouseUpPrimitive(mousePos,terminateEvent,e);
         if (!running) break;
     }
     windows.forEach(w => w.disconnectDisplay());
 }
 
-export { render, clickHandler, mouseDownHandler, mouseMoveHandler, mouseUpHandler, windowsIntersect };
+function mouseWheelHandler(camera: Box, windows: CanvasWindow[],canvas: HTMLCanvasElement, e: WheelEvent) {
+    camera = new Box([...camera.o],camera.w,camera.h);
+    windows.forEach(w => w.connectDisplay(camera,canvas));
+    const intersectingWindows = windows.filter(w => windowsIntersect(w, camera));
+    intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
+    let running = true;
+    const terminateEvent = () => {running = false;}
+    for (let w of intersectingWindows) {
+        w.onWheelPrimitive(terminateEvent,e);
+        if (!running) break;
+    }
+    windows.forEach(w => w.disconnectDisplay());
+}
+
+
+export { render, clickHandler, mouseDownHandler, mouseMoveHandler, mouseUpHandler, mouseWheelHandler, windowsIntersect };
