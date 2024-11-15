@@ -157,8 +157,6 @@ abstract class CanvasWindow extends Box {
         this.onWheel(this.prepareWheelHandlerProps(terminateEvent),e);
     }
     onWheel(h: WheelHandlerProps, e: WheelEvent) {};
-
-    update(p : any) {};
 }
 
 export type { HandlerProps, RenderProps, MouseHandlerProps, WheelHandlerProps };
