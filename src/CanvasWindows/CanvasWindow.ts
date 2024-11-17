@@ -4,30 +4,41 @@ import { add, dotMultiply, subtract } from 'mathjs';
 
 interface HandlerProps {
     canvasDimensions: Vec2;
-    localToCanvas: (v: Vec2) => Vec2;
-    canvasToLocal: (v: Vec2) => Vec2;
-    localToCanvasMeasure: (v: Vec2) => Vec2;
-    canvasToLocalMeasure: (v: Vec2) => Vec2;
+    absoluteToCanvasMeasure: (v: Vec2) => Vec2;
+    canvasToAbsoluteMeasure: (v: Vec2) => Vec2;
     camera: Box;
+    canvasUnit : Vec2;
+    absoluteUnit: Vec2;
+    canvasO: Vec2;
 }
 
-interface RenderProps extends HandlerProps {
+interface PostBoxHandlerProps extends HandlerProps {
+    localToCanvas: (v: Vec2) => Vec2;
+    canvasToLocal: (v: Vec2) => Vec2;
+    absoluteO: Vec2;
+}
+
+interface RenderProps extends PostBoxHandlerProps {
     ctx: CanvasRenderingContext2D;
 }
 
-interface MouseHandlerProps extends HandlerProps {
-    pos: Vec2;
+interface MouseHandlerProps extends PostBoxHandlerProps {
+    relativePos: Vec2;
     absolutePos: Vec2;
+    canvasPos: Vec2;
     terminateEvent: () => void;
+    canvasO: Vec2;
 }
 
-interface WheelHandlerProps extends HandlerProps {
+interface WheelHandlerProps extends PostBoxHandlerProps {
     terminateEvent: () => void;
+    canvasO: Vec2;
 }
 
 function generateRandomKey() {
     return Math.random().toString(36).substring(7);
 }
+
 
 abstract class CanvasWindow extends Box {
 
@@ -35,9 +46,54 @@ abstract class CanvasWindow extends Box {
     _camera: Box | undefined;
     _canvas: HTMLCanvasElement | undefined;
     key: string = generateRandomKey();
+    _parent: CanvasWindow | undefined;
 
     constructor(o?: Vec2, w?: number, h?: number) {
         super(o,w,h); 
+    }
+
+    get parentO() {
+        if (!this._parent) throw new Error('Parent not set');
+        return this._parent.o;
+    }
+    get parentW() {
+        if (!this._parent) throw new Error('Parent not set');
+        return this._parent.w;
+    }
+    get parentH() {
+        if (!this._parent) throw new Error('Parent not set');
+        return this._parent.h;
+    }
+
+    getBoundingBox(): Vec2[] {
+        return [
+            this.globalO,
+            add(this.globalO, [this.w, 0]),
+            add(this.globalO, [this.w, this.h]),
+            add(this.globalO, [0, this.h]),
+        ];
+    }
+
+    get globalO() : Vec2 {
+        if (!this._parent) return this.o;
+        return add(this._parent.globalO, this.o);
+    }
+
+    get globalKey() : string {
+        if (!this._parent) return this.key;
+        return this._parent.globalKey + '@' + this.key;
+    }
+
+    updateExternalState(...args: any[]) {};
+
+    getChildrenPrimitive() : CanvasWindow[] {
+        const children = this.getChildren();
+        children.forEach(c => c._parent = this);
+        return children;
+    }
+
+    getChildren() : CanvasWindow[] {
+        return [];
     }
 
     getLayer() {
@@ -71,48 +127,81 @@ abstract class CanvasWindow extends Box {
         const camera = this._camera as Box;
         const canvas = this._canvas as HTMLCanvasElement;
 
+        const absoluteToCanvasMeasure = (v: Vec2) : Vec2 => {
+            return dotMultiply(v, [canvas.width / camera.w, canvas.height / camera.h]);
+        }
+        const canvasToAbsoluteMeasure = (v: Vec2) : Vec2 => {
+            return dotMultiply(v, [camera.w / canvas.width, camera.h / canvas.height]);
+        }
+
+        const canvasUnit = [camera.w / canvas.width, camera.h / canvas.height] as Vec2;
+        const absoluteUnit = [canvas.width / camera.w, canvas.height / camera.h] as Vec2;
+        const canvasO = [camera.o[0], camera.o[1]] as Vec2;
+
+        const canvasDimensions = [canvas.width, canvas.height] as Vec2;
+        return {
+            canvasDimensions,
+            absoluteToCanvasMeasure,
+            canvasToAbsoluteMeasure,
+            camera,
+            canvasUnit,
+            canvasO,
+            absoluteUnit,
+        }
+    }
+
+    preparePostBoxHandlerProps() : PostBoxHandlerProps {
+        if (!this.displayConnected) throw new Error('Display not connected');
+        const camera = this._camera as Box;
+        const canvas = this._canvas as HTMLCanvasElement;
+
         const localToCanvas = (v: Vec2) : Vec2 => {
-            const globalPos = add(this.o, v);
+            const globalO = this.globalO;
+            const globalPos = add(globalO, v);
             const cameraPos = subtract(globalPos, camera.o);
             return dotMultiply(cameraPos, [canvas.width / camera.w, canvas.height / camera.h]);
         }
         const canvasToLocal = (v: Vec2) : Vec2 => {
+            const globalO = this.globalO;
             const cameraPos = dotMultiply(v, [camera.w / canvas.width, camera.h / canvas.height]);
             const globalPos = add(cameraPos, camera.o);
-            return subtract(globalPos, this.o);
+            return subtract(globalPos, globalO);
         }
-        const localToCanvasMeasure = (v: Vec2) : Vec2 => {
-            return dotMultiply(v, [canvas.width / camera.w, canvas.height / camera.h]);
-        }
-        const canvasToLocalMeasure = (v: Vec2) : Vec2 => {
-            return dotMultiply(v, [camera.w / canvas.width, camera.h / canvas.height]);
-        }
-
-        const canvasDimensions = [canvas.width, canvas.height] as Vec2;
+        const absoluteO = localToCanvas([0,0]);
         return {
+            ...this.prepareHandlerProps(),
             localToCanvas,
             canvasToLocal,
-            canvasDimensions,
-            localToCanvasMeasure,
-            canvasToLocalMeasure,
-            camera,
+            absoluteO,
         }
+
     }
 
 
+
+
     private prepareMouseHandlerProps(pos: Vec2,terminateEvent: () => void) : MouseHandlerProps {
-        const relativePos = subtract(pos, this.o);
+        const h = this.preparePostBoxHandlerProps();
+        const canvas = this._canvas as HTMLCanvasElement;
+        const camera = this._camera as Box;
+        const { absoluteUnit, canvasO } = h;
+        const [aux,auy] = absoluteUnit;
+        const [cx,cy] = canvasO;
+        const absolutePos = [cx + pos[0] * aux, cy + pos[1] * auy] as Vec2;
+        const relativePos = subtract(absolutePos, this.o);
         return {
-            ...this.prepareHandlerProps(),
-            pos: relativePos,
-            absolutePos: pos,
+            ...h,
+            relativePos,
+            canvasPos: pos,
+            absolutePos,
             terminateEvent,
         }
     }
 
     private prepareWheelHandlerProps(terminateEvent: () => void) : WheelHandlerProps {
+        const h = this.preparePostBoxHandlerProps();
         return {
-            ...this.prepareHandlerProps(),
+            ...h,
             terminateEvent,
         }
     }
@@ -120,8 +209,9 @@ abstract class CanvasWindow extends Box {
 
     renderPrimitive(ctx: CanvasRenderingContext2D) {
         if (!this.render) return;
+        const h = this.preparePostBoxHandlerProps();
         this.render({
-            ...this.prepareHandlerProps(),
+            ...h,
             ctx,
         });
     }
@@ -157,6 +247,14 @@ abstract class CanvasWindow extends Box {
         this.onWheel(this.prepareWheelHandlerProps(terminateEvent),e);
     }
     onWheel(h: WheelHandlerProps, e: WheelEvent) {};
+
+    strokeOutline(r: RenderProps, color: string) {
+        r.ctx.strokeStyle = color;
+        const { absoluteO, absoluteUnit} = r;
+        const [aox,aoy] = absoluteO;
+        const [aux,auy] = absoluteUnit
+        r.ctx.strokeRect(aox, aoy, this.w * aux, this.h * auy);
+    }
 }
 
 export type { HandlerProps, RenderProps, MouseHandlerProps, WheelHandlerProps };
