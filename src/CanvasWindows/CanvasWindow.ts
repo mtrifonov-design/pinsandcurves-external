@@ -28,6 +28,7 @@ interface MouseHandlerProps extends PostBoxHandlerProps {
     canvasPos: Vec2;
     terminateEvent: () => void;
     canvasO: Vec2;
+    pointInside: boolean;
 }
 
 interface WheelHandlerProps extends PostBoxHandlerProps {
@@ -47,22 +48,32 @@ abstract class CanvasWindow extends Box {
     _canvas: HTMLCanvasElement | undefined;
     key: string = generateRandomKey();
     _parent: CanvasWindow | undefined;
+    children: CanvasWindow[] = [];
+    _isPrimaryCamera: boolean = false;
+
+    setAsPrimaryCamera() {
+        this._isPrimaryCamera = true;
+    }
 
     constructor(o?: Vec2, w?: number, h?: number) {
         super(o,w,h); 
     }
 
     get parentO() {
-        if (!this._parent) throw new Error('Parent not set');
-        return this._parent.o;
+        if (!this._parent) return [0,0] as Vec2;
+        return this._parent.globalO;
     }
     get parentW() {
-        if (!this._parent) throw new Error('Parent not set');
+        if (!this._parent) return 0;
         return this._parent.w;
     }
     get parentH() {
-        if (!this._parent) throw new Error('Parent not set');
+        if (!this._parent) return 0;
         return this._parent.h;
+    }
+
+    getChildByKey(key: string) : CanvasWindow | undefined {
+        return this.children.find(c => c.key === key);
     }
 
     getBoundingBox(): Vec2[] {
@@ -74,21 +85,35 @@ abstract class CanvasWindow extends Box {
         ];
     }
 
+    pointInside(v: Vec2) : boolean {
+        return super.pointInside(subtract(v, this.parentO));
+    }
+
     get globalO() : Vec2 {
         if (!this._parent) return this.o;
         return add(this._parent.globalO, this.o);
     }
 
     get globalKey() : string {
-        if (!this._parent) return this.key;
+        if (!this._parent) return "root";
         return this._parent.globalKey + '@' + this.key;
+    }
+
+    destroy() {
+        // Work in destruction mechanism
     }
 
     updateExternalState(...args: any[]) {};
 
-    getChildrenPrimitive() : CanvasWindow[] {
+    getChildrenPrimitive(existingWindowsMap: { [key: string] : CanvasWindow | undefined}) : CanvasWindow[] {
         const children = this.getChildren();
-        children.forEach(c => c._parent = this);
+        for (let i = 0; i < children.length; i++) {
+            const c = children[i];
+            c._parent = this;
+            const existingWindow = existingWindowsMap[c.globalKey];
+            children[i] = existingWindow ? existingWindow as CanvasWindow : c;
+        }
+        this.children = children;
         return children;
     }
 
@@ -188,12 +213,14 @@ abstract class CanvasWindow extends Box {
         const [aux,auy] = absoluteUnit;
         const [cx,cy] = canvasO;
         const absolutePos = [cx + pos[0] * aux, cy + pos[1] * auy] as Vec2;
-        const relativePos = subtract(absolutePos, this.o);
+        const relativePos = subtract(absolutePos, this.globalO);
+        const pointInside = this.pointInside(absolutePos);
         return {
             ...h,
             relativePos,
             canvasPos: pos,
             absolutePos,
+            pointInside,
             terminateEvent,
         }
     }
