@@ -1,4 +1,5 @@
 import Box from './Box';
+import CanvasRoot from './Root';
 import { Vec2 } from './types';
 import { add, dotMultiply, subtract } from 'mathjs';
 
@@ -44,19 +45,160 @@ function generateRandomKey() {
 abstract class CanvasWindow extends Box {
 
     layer: number = 0;
-    _camera: Box | undefined;
-    _canvas: HTMLCanvasElement | undefined;
-    key: string = generateRandomKey();
+    _root: CanvasRoot | undefined;
+    // _cameraSnapshot: Box | undefined;
+    // _canvas: HTMLCanvasElement | undefined;
+    key: string | undefined;
     _parent: CanvasWindow | undefined;
     children: CanvasWindow[] = [];
     _isPrimaryCamera: boolean = false;
+    _needsUpdate: boolean = true;
+
+
+    get _cameraSnapshot() {
+        if (!this._root) throw new Error('Root not connected');
+        return this._root?.cameraSnapshot;
+    }
+
+    get _canvas() {
+        if (!this._root) throw new Error('Root not connected');
+        return this._root?.canvas;
+    }
 
     setAsPrimaryCamera() {
         this._isPrimaryCamera = true;
     }
 
-    constructor(o?: Vec2, w?: number, h?: number) {
-        super(o,w,h); 
+    // state management
+    // onExternalStateUpdate(externalState: any) {};
+    // externalState: any;
+    // setExternalState(externalState:any) {
+    //     this._needsUpdate = true;
+    //     this.externalState = externalState;
+    //     this.onExternalStateUpdate(externalState)
+    // };
+    state: any;
+    setState(s: any) {
+        if (this.state === s) throw new Error('Cannot set state to previous state. ');
+        this._needsUpdate = true;
+        this.state = s;
+        if (this._root) this._root.scheduleUpdate();
+    }
+
+    // context
+    context: { [key: string]: any } = {};
+    setContext(key: string, value: any) {
+        this._needsUpdate = true;
+        this.context[key] = value;
+        if (this._root) this._root.scheduleUpdate();
+    }
+
+
+
+    // lifecycle methods
+    windowDidMount(props: { [key: string] : any}) {};
+    windowDidUpdate(props: { [key: string] : any}) {};
+    cameraDidUpdate() {};
+    windowWillUnmount() {};
+
+
+    // the position is determined either by
+    // overrriding the getBox method or by
+    // overriding the o,w,h getters
+
+    getBox() : Box {
+        return new Box([0,0],0,0);
+    }
+
+    get o() {
+        return this.getBox().o;
+    }
+    get w() {
+        return this.getBox().w;
+    }
+    get h() {;
+        return this.getBox().h;
+    }
+
+    didMount : boolean = false;
+    updateSelf() : void {
+        this._needsUpdate = false;
+        if (!this.didMount) {
+            this.didMount = true;
+            this.windowDidMount({ ... this.props });
+        }
+        this.updateChildren();
+        this.windowDidUpdate({ ... this.props });
+    }
+
+    updateChildren() : void {
+        this.childIndex = 0;
+        const children = this.getChildren(this.props).map(c => c(this));
+        const aboutToUnmount = this.children.filter(c => !children.includes(c));
+        this.children = children;
+        aboutToUnmount.forEach(c => c.windowWillUnmount());
+        this.children.forEach(c => c.updateSelf());
+    }
+
+    getChildren(props?: { [key: string] : any}) : ((parent: CanvasWindow) => CanvasWindow)[] {
+        return [];
+    }
+
+    childIndex = 0;
+    incChildIndex() {
+        this.childIndex++;
+    }   
+
+
+    isCanvasRoot = false;
+    static Node(props?: { [key: string]: any }) : (parent: CanvasWindow | CanvasRoot) => CanvasWindow {
+        const constructorName = this.name;
+        return (parent: CanvasWindow | CanvasRoot) => {
+            if (parent.isCanvasRoot) {
+                parent = parent as CanvasRoot;
+                if (!props) props = {};
+                const key = "root";
+                let node: CanvasWindow;
+                node = new (this as any)() as CanvasWindow;
+                node._root = parent;
+                node.setKey(key);
+                node.props = { ...props };
+                node.context = { ...node.context};
+                // node.externalState = parent.externalState;
+                return node;
+            } else {
+                const indexAmongstParentChildren = parent.childIndex;
+                if (!props) props = {};
+                const key = props.key ? props.key : `${constructorName}[${indexAmongstParentChildren}]`;
+                const keyExists = parent.children.findIndex(c => c.key === key) !== -1;
+                let node: CanvasWindow;
+                // let didMount = false;
+                if (keyExists) {
+                    // didMount = true;
+                    node = parent.children.find(c => c.key === key) as CanvasWindow;            
+                } else {
+                    node = new (this as any)();
+                    // node.externalState = parent.externalState;
+                    node._parent = parent;
+                    node._root = parent._root;
+                    node.setKey(key);
+                }
+                node.props = { ...props };
+                node.context = {...node.context, ...parent.context};
+                // if (!didMount) node.windowDidMount({ ... props});
+                // node.windowDidUpdate({ ... props });
+                parent.incChildIndex();
+                return node;
+            }
+        }
+    }
+
+    // props
+    props: { [key: string]: any } = {};
+
+
+    constructor() {
+        super();
     }
 
     get parentO() {
@@ -99,27 +241,6 @@ abstract class CanvasWindow extends Box {
         return this._parent.globalKey + '@' + this.key;
     }
 
-    destroy() {
-        // Work in destruction mechanism
-    }
-
-    updateExternalState(...args: any[]) {};
-
-    getChildrenPrimitive(existingWindowsMap: { [key: string] : CanvasWindow | undefined}) : CanvasWindow[] {
-        const children = this.getChildren();
-        for (let i = 0; i < children.length; i++) {
-            const c = children[i];
-            c._parent = this;
-            const existingWindow = existingWindowsMap[c.globalKey];
-            children[i] = existingWindow ? existingWindow as CanvasWindow : c;
-        }
-        this.children = children;
-        return children;
-    }
-
-    getChildren() : CanvasWindow[] {
-        return [];
-    }
 
     getLayer() {
         return this.layer;
@@ -134,34 +255,56 @@ abstract class CanvasWindow extends Box {
     }
 
     get displayConnected() {
-        return this._camera && this._canvas;
+        return this._cameraSnapshot && this._canvas;
     }
 
-    connectDisplay(camera: Box, canvas: HTMLCanvasElement) {
-        this._camera = camera;
-        this._canvas = canvas;
+
+    get canvasUnit() {
+        if (!this.displayConnected) throw new Error('Display not connected');
+        return [this._cameraSnapshot.w / this._canvas.width, this._cameraSnapshot.h / this._canvas.height] as Vec2;
     }
 
-    disconnectDisplay() {
-        this._camera = undefined;
-        this._canvas = undefined;
+    get absoluteUnit() {
+        if (!this.displayConnected) throw new Error('Display not connected');
+        return [this._canvas.width / this._cameraSnapshot.w, this._canvas.height / this._cameraSnapshot.h] as Vec2;
+    }
+
+    get canvasO() {
+        if (!this.displayConnected) throw new Error('Display not connected');
+        return [this._cameraSnapshot.o[0], this._cameraSnapshot.o[1]] as Vec2;
+    }
+
+    absoluteToCanvasMeasure(v: Vec2) : Vec2 {
+        if (!this.displayConnected) throw new Error('Display not connected');
+        return dotMultiply(v, [this._canvas.width / this._cameraSnapshot.w, this._canvas.height / this._cameraSnapshot.h]);
+    }
+
+    canvasToAbsoluteMeasure(v: Vec2) : Vec2 {
+        if (!this.displayConnected) throw new Error('Display not connected');
+        return dotMultiply(v, [this._cameraSnapshot.w / this._canvas.width, this._cameraSnapshot.h / this._canvas.height]); 
+    }
+
+    get cameraSnapshot() {
+        if (!this.displayConnected) throw new Error('Display not connected');
+        return this._cameraSnapshot;
+    }
+
+    get canvas() {
+        if (!this.displayConnected) throw new Error('Display not connected');
+        return this._canvas;
     }
 
     prepareHandlerProps() : HandlerProps {
         if (!this.displayConnected) throw new Error('Display not connected');
-        const camera = this._camera as Box;
-        const canvas = this._canvas as HTMLCanvasElement;
+        const camera = this.cameraSnapshot;
+        const canvas = this.canvas;
 
-        const absoluteToCanvasMeasure = (v: Vec2) : Vec2 => {
-            return dotMultiply(v, [canvas.width / camera.w, canvas.height / camera.h]);
-        }
-        const canvasToAbsoluteMeasure = (v: Vec2) : Vec2 => {
-            return dotMultiply(v, [camera.w / canvas.width, camera.h / canvas.height]);
-        }
+        const absoluteToCanvasMeasure = this.absoluteToCanvasMeasure.bind(this);
+        const canvasToAbsoluteMeasure = this.canvasToAbsoluteMeasure.bind(this);
 
-        const canvasUnit = [camera.w / canvas.width, camera.h / canvas.height] as Vec2;
-        const absoluteUnit = [canvas.width / camera.w, canvas.height / camera.h] as Vec2;
-        const canvasO = [camera.o[0], camera.o[1]] as Vec2;
+        const canvasUnit = this.canvasUnit;
+        const absoluteUnit = this.absoluteUnit;
+        const canvasO = this.canvasO;
 
         const canvasDimensions = [canvas.width, canvas.height] as Vec2;
         return {
@@ -177,7 +320,7 @@ abstract class CanvasWindow extends Box {
 
     preparePostBoxHandlerProps() : PostBoxHandlerProps {
         if (!this.displayConnected) throw new Error('Display not connected');
-        const camera = this._camera as Box;
+        const camera = this._cameraSnapshot as Box;
         const canvas = this._canvas as HTMLCanvasElement;
 
         const localToCanvas = (v: Vec2) : Vec2 => {
@@ -193,6 +336,8 @@ abstract class CanvasWindow extends Box {
             return subtract(globalPos, globalO);
         }
         const absoluteO = localToCanvas([0,0]);
+
+
         return {
             ...this.prepareHandlerProps(),
             localToCanvas,
@@ -202,13 +347,10 @@ abstract class CanvasWindow extends Box {
 
     }
 
-
-
-
     private prepareMouseHandlerProps(pos: Vec2,terminateEvent: () => void) : MouseHandlerProps {
         const h = this.preparePostBoxHandlerProps();
         const canvas = this._canvas as HTMLCanvasElement;
-        const camera = this._camera as Box;
+        const camera = this._cameraSnapshot as Box;
         const { absoluteUnit, canvasO } = h;
         const [aux,auy] = absoluteUnit;
         const [cx,cy] = canvasO;

@@ -36,10 +36,12 @@ function clickHandler(camera: Box, windows: CanvasWindow[], canvas: HTMLCanvasEl
 }
 
 function mouseDownHandler(camera: Box, windows: CanvasWindow[],canvas: HTMLCanvasElement, mousePos: [number, number], e: MouseEvent) {
+    // console.log(windows)
     camera = new Box([...camera.o],camera.w,camera.h);
     const intersectingWindows = windows.filter(w => windowsIntersect(w, camera));
     intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
     let running = true;
+    // console.log(intersectingWindows)
     const terminateEvent = () => {running = false;}
     for (let w of intersectingWindows) {
         w.onMouseDownPrimitive(mousePos,terminateEvent,e);
