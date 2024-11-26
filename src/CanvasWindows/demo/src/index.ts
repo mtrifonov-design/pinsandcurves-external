@@ -1,14 +1,12 @@
 import CanvasRoot from "../../Root";
-import { CanvasWindow, RenderProps } from "../../CanvasWindow";
+import { CanvasWindow, MouseHandlerProps, RenderProps } from "../../CanvasWindow";
 import Box from "../../Box";
 import InteractiveCamera from "./Camera";
+import { add, dotMultiply } from "mathjs";
 
 const canvas = document.getElementById("demo-canvas") as HTMLCanvasElement;
 
 class RootWindow extends CanvasWindow {
-
-
-
     getChildren()  {
         const w1 = ExampleWindow.Node({specialWindow: true});
         const w2 = ExampleWindow.Node({specialWindow: false});
@@ -21,7 +19,7 @@ class RootWindow extends CanvasWindow {
     }
 
     onMouseMove() {
-        console.log("Mouse moved over",this.key);
+        // console.log("Mouse moved over",this.key);
     }
 
     getBox() {
@@ -38,6 +36,7 @@ const rootWindow = RootWindow.Node();
 
 // Initialize the CanvasRoot
 const canvasRoot = new CanvasRoot(rootWindow, canvas);
+(window as any).canvasRoot = canvasRoot;
 
 // Example rendering logic
 class ExampleWindow extends CanvasWindow {
@@ -72,18 +71,28 @@ class SpecialWindow extends CanvasWindow {
 
     state = 0;
     windowDidUpdate(props: { [key: string]: any; }): void {
-        console.log("SpecialWindow updated",this.state);
-        if (this.state % 2 !== 0) {
-            this.setState(this.state + 1);
-        }
+        // console.log("SpecialWindow updated",this.state);
+        // if (this.state % 2 !== 0) {
+        //     this.setState(this.state + 1);
+        // }
     }
 
     render(r : any) {
         this.strokeOutline(r,"green");
     }
 
-    onClick() {
-        this.setState(this.state +1 );
+    onClick(h: MouseHandlerProps) {
+        // this.setState(this.state +1 );
+        // console.log(h.absoluteUnit, this.absoluteUnit)
+        
+
+        const simulated = add(this.canvasO, dotMultiply(this.canvasUnit, h.canvasPos));
+        // console.log(this.canvasUnit,p.canvasUnit)
+        console.log('absolutePos', h.absolutePos,simulated);
+        // console.log('canvasUnit', h.canvasUnit,this.canvasUnit)
+        // console.log('canvasO',h.canvasO,this.canvasO)
+        console.assert(h.canvasUnit[0] === this.canvasUnit[0] && h.canvasUnit[1] === this.canvasUnit[1]);
+        console.assert(h.canvasO[0] === this.canvasO[0] && h.canvasO[1] === this.canvasO[1]);
     }
 }
 
@@ -116,16 +125,18 @@ canvas.addEventListener("mouseup", (e) => {
     canvasRoot.mouseUpHandler([x,y],e);
 });
 
+canvas.addEventListener("wheel", (e) => {
+    canvasRoot.mouseWheelHandler(e);
+})
+
 
 const f = () => {
-    canvasRoot.render();
+    canvasRoot.onAnimationFrame();
     window.requestAnimationFrame(f);
 }
 
-window.requestAnimationFrame(() => {
-    canvasRoot.render.bind(canvasRoot)();
-    window.requestAnimationFrame(f);
-})
+f();
+
 
 
 // canvasRoot.render();

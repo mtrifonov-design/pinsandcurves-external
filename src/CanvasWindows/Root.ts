@@ -2,77 +2,21 @@ import Box from "./Box";
 import { CanvasWindow } from "./CanvasWindow";
 import { render, mouseDownHandler, mouseMoveHandler, mouseUpHandler, mouseWheelHandler, clickHandler } from "./Render";
 
-// function getWindows(root: CanvasWindow) : CanvasWindow[] {
-//     const getWindowsRecursive = (window: CanvasWindow) : CanvasWindow[] => {
-//         const children = window.getChildrenPrimitive();
-//         return [window, ...children.flatMap(getWindowsRecursive)];
-//     };
-//     return getWindowsRecursive(root);
-// }
 
-// type KeyArray = string[];
-
-// function setParents(windows: CanvasWindow[]) {
-//     const processedWindows : [CanvasWindow, KeyArray, number][] = windows.map(w => {
-//         const keyArray = w.globalKey.split('@');
-//         const depth = keyArray.length;
-//         return [w, keyArray, depth];
-//     });
-//     const windowDict: {
-//         [key: string]: CanvasWindow | undefined
-//     } = windows.reduce((acc, w) => {
-//         acc[w.globalKey] = w;
-//         return acc;
-//     }, {} as { [key: string]: CanvasWindow | undefined });
-
-//     processedWindows.forEach(([w, keyArray, depth]) => {
-//         if (depth === 1) {
-//             w._parent = undefined;
-//         } else {
-//             const parentKey = keyArray.slice(0, -1).join('@');
-//             w._parent = windowDict[parentKey];
-//         }
-//     });
-// }
-
-// function setChildren(windows: CanvasWindow[]) {
-//     const processedWindows : [CanvasWindow, KeyArray, number][] = windows.map(w => {
-//         const keyArray = w.globalKey.split('@');
-//         const depth = keyArray.length;
-//         return [w, keyArray, depth];
-//     });
-
-//     const windowDict: {
-//         [key: string]: CanvasWindow | undefined
-//     } = windows.reduce((acc, w) => {
-//         acc[w.globalKey] = w;
-//         return acc;
-//     }, {} as { [key: string]: CanvasWindow | undefined });
-
-//     processedWindows.forEach(([w, keyArray, depth]) => {
-//         if (depth === 1) {
-//             w.children = [];
-//         } else {
-//             const parentKey = keyArray.slice(0, -1).join('@');
-//             const parent = windowDict[parentKey];
-//             if (parent) {
-//                 parent.children.push(w);
-//             }
-//         }
-//     });
-// }
-
+function generateId() {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
 
 class CanvasRoot {
     canvas: HTMLCanvasElement;
-    cameraSnapshot: Box;
     isCanvasRoot: true = true;
     rootNode : CanvasWindow;
 
     constructor(root: (p : CanvasWindow | CanvasRoot) => CanvasWindow, canvas: HTMLCanvasElement) {
         this.canvas = canvas;
-        this.cameraSnapshot = new Box([0,0],canvas.width, canvas.height);
         this.rootNode = root(this);
+        this.rootNode._needsUpdate = true;
+        this.scheduleUpdate();
     }
 
     get windows() {
@@ -122,11 +66,20 @@ class CanvasRoot {
         console.log(logWindowRecursive(this.rootNode).join('\n'));
     }
     
-    
 
-    updateNeeded: boolean = true;
-    scheduleUpdate() {
-        this.updateNeeded = true;
+    expirePositions() {
+        this.windows.forEach(w => w._boxSnapshot = undefined);
+    }
+    
+    positionExpirationScheduled = false;
+    expirePositionsAfterTaskCompletes() {
+        // the positionUpdateNeeded should be set to true after all code has run synchronously
+        // as a microtask:
+        if (this.positionExpirationScheduled) return;
+        Promise.resolve().then(() => {
+            this.expirePositions();
+            this.positionExpirationScheduled = false;
+        });
     }
 
     onUpdateFunction : Function | undefined = undefined;
@@ -134,21 +87,126 @@ class CanvasRoot {
         this.onUpdateFunction = f;
     }
 
-    private update() {
-        if (!this.updateNeeded) return;
+    get cameraSnapshot() {
+        if (!this.cameraNode) return new Box([0,0],this.canvas.width,this.canvas.height);
+        return this.cameraNode.getBoxPrimitive().clone();
+    }
 
+    cameraNode: CanvasWindow | undefined = undefined;
+    installCamera(node: CanvasWindow) {
+        if (this.cameraNode === node) return;
+        else {
+            this.cameraNode = node;
+        }
+    }
+
+
+    scheduledStateUpdates: [string,() => void][] = [];
+    scheduleStateUpdate(node: CanvasWindow, newState: any) {
+        const stateUpdateCallback = () => {
+            node.state = newState;
+        }
+        const id = this.scheduleUpdate();
+        this.scheduledStateUpdates.push([id,stateUpdateCallback]);
+
+    }
+
+    scheduleContextUpdate(node: CanvasWindow, contextKey: string, newContext: any) {
+        const contextUpdateCallback = () => {
+            node.context[contextKey] = newContext;
+        }
+        const id = this.scheduleUpdate();
+        this.scheduledStateUpdates.push([id,contextUpdateCallback]);
+        
+    }
+
+    // updateScheduled = true;
+    // scheduledUpdateIds: string[] = [];
+    // scheduleUpdate() {
+    //     // if (this.updateScheduled) return;
+    //     // this.updateScheduled = true; 
+    //     const id = generateId();
+    //     this.scheduledUpdateIds.push(id);
+    //     Promise.resolve().then(() => {
+    //         this.scheduledUpdateIds = this.scheduledUpdateIds.filter(i => i !== id);
+    //         this.updateRecursive();
+    //     });
+
+    // }
+
+    scheduledUpdateIds: string[] = [];
+    currentUpdateId: string = "";
+
+    updateScheduled = false;
+    updateRunning = false;
+    scheduleUpdate() {
+        if (!this.updateRunning && !this.updateScheduled) {
+            this.updateScheduled = true;
+            const id = generateId();
+            this.scheduledUpdateIds.push(id);
+            this.currentUpdateId = id;
+            Promise.resolve().then(() => {
+                // Execute the batched updates
+                //console.log("Executing batched updates");
+                this.updateRunning = true;
+                while (this.scheduledUpdateIds.length > 0) {
+                    this.updateScheduled = false;
+                    this.updateCurrentId();
+                }
+                this.updateRunning = false;
+            });
+            return this.currentUpdateId;
+        }
+        if (!this.updateRunning && this.updateScheduled) {
+            return this.currentUpdateId;
+        }
+        if (this.updateRunning && !this.updateScheduled) {
+            this.updateScheduled = true;
+            const id = generateId();
+            this.scheduledUpdateIds.push(id);
+            this.currentUpdateId = id;
+            return this.currentUpdateId;
+        }
+        if (this.updateRunning && this.updateScheduled) {
+            return this.currentUpdateId
+        }
+        throw new Error("Invalid state");
+    }
+
+    onAnimationFrame() {
+        try {
+            // this.updateRecursive();
+            this.render();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+
+    private updateCurrentId() {
+        //console.log("Updating current ID", this.currentUpdateId);
+        const id = this.scheduledUpdateIds[0];
+        this.scheduledUpdateIds = this.scheduledUpdateIds.filter(i => i !== id);
+        const relevantStateUpdates = this.scheduledStateUpdates.filter(([updateId]) => updateId === id);
+        relevantStateUpdates.forEach(([_,update]) => update());
+        this.scheduledStateUpdates = this.scheduledStateUpdates.filter(([updateId]) => updateId !== id);
+        this.update();
+        this.expirePositions();
+    }
+
+    private update() {
         if (this.onUpdateFunction) {
             this.onUpdateFunction();
         }
 
         // find the first window that needs updating
-        let continueSearch = true; 
+        // let continueSearch = true; 
         const findUpdateRootRecursive = (window: CanvasWindow) : void => {
-            if (!continueSearch) return;
+            // if (!continueSearch) return;
             if (window._needsUpdate) {
-                this.updateNeeded = false;
                 window.updateSelf();
-                continueSearch = false;
+                return;
+                // continueSearch = false;
             } else {
                 window.children.forEach(findUpdateRootRecursive);
             }
@@ -159,94 +217,39 @@ class CanvasRoot {
         // deal with camera
         const camera = this.windows.find(w => w._isPrimaryCamera);
         if (camera) {
-            this.cameraSnapshot = new Box([...camera.globalO], camera.w, camera.h);
+            this.installCamera(camera);
             this.windows.forEach(w => w.cameraDidUpdate());
         }
-
-        this.update();
     }
 
-    // private updateWindowsAndCamera() {
-    //     const existingWindowsMap: { [key: string]: CanvasWindow } = this.windows.reduce((acc, w) => {
-    //         acc[w.globalKey] = w;
-    //         return acc;
-    //     } , {} as { [key: string]: CanvasWindow });
 
-    //     const getWindowsRecursive = (window: CanvasWindow) : CanvasWindow[] => {
-    //         const children = window.getChildrenPrimitive(existingWindowsMap);
-    //         return [window, ...children.flatMap(getWindowsRecursive)];
-    //     }
-
-    //     const newWindows = getWindowsRecursive(this.root);
-
-    //     this.windows = newWindows;
-    //     this.windows.forEach(w => {
-    //         if (!w._didMount) {
-    //             w.windowDidMount();
-    //         }
-    //         if (w._needsUpdate) {
-    //             w.windowDidUpdate();
-    //         }
-    //     })
-
-    //     const camera = this.windows.find(w => w._isPrimaryCamera);
-    //     if (camera) {
-    //         camera.getBoxPrimitive();
-    //         this.cameraSnapshot = new Box([...camera.globalO], camera.w, camera.h);
-    //         this.windows.forEach(w => w.cameraDidUpdate());
-    //     }
-
-    //     const removedWindows = Object.keys(existingWindowsMap).filter(k => !newWindows.includes(existingWindowsMap[k]!));
-    //     removedWindows.forEach(k => {
-    //         const w = existingWindowsMap[k]!;
-    //         w.windowWillUnmount();
-    //     });
-
-    //     this.updateNeeded = false;
-    // }
-
-
-
-
-    // externalState: any;
-    // setInitialExternalState(externalState: any) {
-    //     this.externalState = externalState;
-    //     this.windows.forEach(w => w.setExternalState(externalState));
-    // }
-    // updateExternalState(externalState: any) {
-    //     if (this.externalState === externalState) return;
-    //     this.windows.forEach(w => w.setExternalState(externalState));
-    // }
 
     render() {
-        this.update();
         const ctx = this.canvas.getContext('2d');
         if (!ctx) throw new Error("Could not get 2d context from canvas");
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         render(this.cameraSnapshot, this.windows, this.canvas, ctx);
     }
 
+
+    // Handlers
     mouseDownHandler(mousePos: [number, number], e: MouseEvent) {
-        this.update();
         mouseDownHandler(this.cameraSnapshot, this.windows, this.canvas, mousePos, e);
     }
 
     mouseMoveHandler(mousePos: [number, number], e: MouseEvent) {
-        this.update();
         mouseMoveHandler(this.cameraSnapshot, this.windows, this.canvas, mousePos, e);
     }
 
     mouseUpHandler(mousePos: [number, number], e: MouseEvent) {
-        this.update();
         mouseUpHandler(this.cameraSnapshot, this.windows, this.canvas, mousePos, e);
     }
 
     mouseWheelHandler(e: WheelEvent) {
-        this.update();
         mouseWheelHandler(this.cameraSnapshot, this.windows, this.canvas, e);
     }
 
     clickHandler(mousePos: [number, number], e: MouseEvent) {
-        this.update();
         clickHandler(this.cameraSnapshot, this.windows, this.canvas, mousePos, e);
     }
 }

@@ -1,7 +1,7 @@
 import { add, subtract } from "mathjs";
-import { CanvasWindow, MouseHandlerProps, RenderProps, WheelHandlerProps } from "../../CanvasWindow";
-import Box from "../../Box";
+import { CanvasWindow, MouseHandlerProps, WheelHandlerProps, RenderProps } from "../../CanvasWindow";
 import { Vec2 } from "../../types";
+import Box from "../../Box";
 
 const CONSTANTS = {
     PixelsPerFrame: 10,
@@ -12,47 +12,32 @@ const CONSTANTS = {
 class Camera extends CanvasWindow {
 
     get displayDimensions() : Vec2{
-        const {width,height} = { width: 100, height: 100}
+        const {width,height} = {width: 500, height: 500};
         return [width,height];
     }
 
     windowDidMount(): void {
-        this.cameraBox = (new Box([0,0],this.displayDimensions[0],this.displayDimensions[1]));
-        this.onGlobalWindowChange();
+        // this.onGlobalWindowChange();
         this.setAsPrimaryCamera();
     }
 
-    translationVector : Vec2 = [0,0];
-    scaleVector : Vec2 = [1,1];
-    scaleAnchorVector: Vec2 = [0,0];
-
-    cameraBox = new Box([0,0],0,0);
-
-    windowDidUpdate(): void {
-        this.onGlobalWindowChange();
-        console.log("UPDATING")
-        if (this.context.translate !== this.translationVector) {
-            this.translationVector = this.context.translate;
-            this.translate(this.context.translate);
-        }
-
-        if (this.context.scale !== this.scaleVector) {
-            this.scale(this.context.scale, this.context.scaleAnchor);
-            this.scaleVector = this.context.scale;
-        }
-    }
-
     get canvasDimensions() : Vec2 {
-        return [this.canvas.width, this.canvas.height];
+        return [500,500] as Vec2;
     }
     
-    translate(v: Vec2) : void {
-        console.log("TRANSLATE")
+    translate(oldCamera: Box, v: Vec2) : Box {
         const [ W, H ] = this.canvasDimensions;
-        let o = this.cameraBox.o;
+        let o = [...oldCamera.o] as Vec2;
+        let w = oldCamera.w;
+        let h = oldCamera.h;
         o = add(o, v) as Vec2;
         // check if the bounding box of the camera is inside the canvas
-        const bb = this.getBoundingBox();
+        const bb = [
+            o,
+            add(o, [w, 0]),
+            add(o, [0, h]),
+            add(o, [w, h])
+        ]
 
         const xMin = Math.min(...bb.map(v => v[0]));
         const xMax = Math.max(...bb.map(v => v[0]));
@@ -71,9 +56,12 @@ class Camera extends CanvasWindow {
         } else if (yMax > H) {
             correction[1] = H - yMax;
         }
+        const oBefore = [...o]
         o = add(o, correction) as Vec2;
-        this.cameraBox = new Box(o, this.cameraBox.w, this.cameraBox.h);
-        console.log("MADE IT TO THE END",this.cameraBox)
+
+        // this.setState({...this.state, cameraBox: new Box(o, this.state.cameraBox.w, this.state.cameraBox.h)});
+        return new Box(o, w, h);
+        // this.checkBounds();
     }
 
     withinBounds(value : number, lower : number, upper : number, epsilon = 1e-10) {
@@ -81,7 +69,7 @@ class Camera extends CanvasWindow {
     }
 
     updateDimensions(o: Vec2, w: number, h: number) : void {
-        this.cameraBox = (new Box(o, w, h));
+        this.setState({...this.state, cameraBox: new Box(o, w, h)});
         this.checkBounds();
     }
 
@@ -89,30 +77,30 @@ class Camera extends CanvasWindow {
         const [ W, H ] = this.canvasDimensions;
         // const epsilon = 1e-10; // Tolerance for floating-point errors
         let o, w, h;
-        o = this.cameraBox.o;
-        w = this.cameraBox.w;
-        h = this.cameraBox.h;
+        o = this.state.cameraBox.o;
+        w = this.state.cameraBox.w;
+        h = this.state.cameraBox.h;
 
         o[0] = Math.max(Math.min(o[0], W),0);
         o[1] = Math.max(Math.min(o[1], H),0);
         w = Math.max(Math.min(w, W - o[0]),0);
         h = Math.max(Math.min(h, H - o[1]),0);
-        this.cameraBox = (new Box(o, w, h));
+        this.setState({...this.state, cameraBox: new Box(o, w, h)});
     }
 
     onGlobalWindowChange(): void {
-        this.translate([0, 0]);
-        this.checkBounds();
+        // this.translate([0, 0]);
+        // this.checkBounds();
     }
 
-    scale(v: Vec2, a: Vec2) : void {
+    scale(oldCamera: Box, v: Vec2, a: Vec2) : Box {
         const [ W, H ] = this.canvasDimensions;
         if (v[0] <= 0 || v[1] <= 0) throw new Error('Scale factor must be positive');
 
         let o, w, h;
-        o = this.cameraBox.o;
-        w = this.cameraBox.w;
-        h = this.cameraBox.h;
+        o = oldCamera.o;
+        w = oldCamera.w;
+        h = oldCamera.h;
 
         const maxScaleW = W / w;
         const maxScaleH = H / h;
@@ -128,8 +116,7 @@ class Camera extends CanvasWindow {
 
         w = newW;
         h = newH;
-        this.cameraBox = (new Box(o, w, h));
-        this.translate(difference);
+        return this.translate(new Box(o, w, h),difference);
     }
 
     getCenter(): Vec2 {
@@ -137,35 +124,23 @@ class Camera extends CanvasWindow {
     }
 
     getBox(): Box {
-        console.log("GETTING BOX",this.cameraBox)
-        return this.cameraBox;
+        // console.log(this.state)
+        return this.state.cameraBox;
     }
 
 }
 
-class InteractiveCamera extends CanvasWindow {
-
-    internalState = {
-        isPanning: false,
-        lastMousePosition: [0, 0] as Vec2,
-        scaleAnchor: [0, 0] as Vec2
-    }
-
-    layer = 5
-
-    windowDidMount(props: { [key: string]: any; }): void {
-        this.setContext('translate', [0, 0]);
-        this.setContext('scale', [1, 1]);
-        this.setContext('scaleAnchor', [0, 0]);
-    }
-
-    // windowDidUpdate(props: { [key: string]: any; }): void {
-    //     console.log("upper",this.context.translate)
-    // }
-
-    getChildren() {
-        // return [];
-        return [Camera.Node()];
+class InteractiveCamera extends Camera {
+    windowDidMount(): void {
+        super.windowDidMount();
+        console.log("InteractiveCamera mounted")
+        this.setState({
+            isPanning: false,
+            lastMousePosition: [0, 0] as Vec2,
+            scaleAnchor: [0, 0] as Vec2,
+            cameraBox: new Box([0,0],this.displayDimensions[0],this.displayDimensions[1]),
+        });
+        console.log(this.state)
     }
 
 
@@ -173,7 +148,7 @@ class InteractiveCamera extends CanvasWindow {
         console.log("INTERACTIVE")
         if (e.button !== 1) return;
         const { terminateEvent, canvasPos } = p;
-        this.internalState = ({ ...this.internalState, lastMousePosition: canvasPos, isPanning: true });
+        this.setState({...this.state, lastMousePosition: canvasPos, isPanning: true });
         terminateEvent();
     }
 
@@ -181,25 +156,26 @@ class InteractiveCamera extends CanvasWindow {
     onMouseMove(p: MouseHandlerProps, e: MouseEvent): void {
         const { terminateEvent, canvasPos, absolutePos, canvasUnit } = p;
         const [cux,cuy] = canvasUnit;
-        this.internalState = ({ ...this.internalState, scaleAnchor: canvasPos });
-        if (this.internalState.isPanning) {
+        let newState = {...this.state};
+        newState = ({...newState, scaleAnchor: canvasPos });
+        if (this.state.isPanning) {
             terminateEvent();
-            const [dx, dy] = subtract(canvasPos, this.internalState.lastMousePosition) as Vec2;
-            //console.log(this.lastMousePosition, absolutePos);
-            this.setContext('translate', [-dx * cux, -dy * cuy]);
-            // this.child.translate([-dx * cux, -dy * cuy]);
-            this.internalState = ({ ...this.internalState, lastMousePosition: canvasPos });
+            const [dx, dy] = subtract(canvasPos, this.state.lastMousePosition) as Vec2;
+            const newBox = this.translate(this.state.cameraBox.clone(),[-dx * cux, -dy * cuy]);
+            newState = ({...newState, lastMousePosition: canvasPos, cameraBox: newBox });
         }
+        this.setState(newState);
     }
 
     onMouseUp(p: MouseHandlerProps, e: MouseEvent): void {
-        this.internalState = ({ ...this.internalState, isPanning: false });
+        this.setState({...this.state, isPanning: false });
     }
 
     onWheel(p: WheelHandlerProps, e: WheelEvent): void {
         const { terminateEvent, canvasToAbsoluteMeasure } = p;
         const { deltaX, deltaY, ctrlKey, altKey } = e;
         if (ctrlKey) {
+            console.log("scrolling")
             let zoomFactor = 1;
             if (deltaX !== 0) {
                 zoomFactor = 1 + deltaX * 0.01; // Adjust this factor as needed
@@ -207,21 +183,18 @@ class InteractiveCamera extends CanvasWindow {
                 zoomFactor = 1 - deltaY * 0.01; // Adjust this factor
             }
             if (altKey) {
-                if (this.h * zoomFactor < 5) return;
-                this.setContext('scale', [1, Math.max(0.1,zoomFactor)]);
-                this.setContext('scaleAnchor', this.internalState.scaleAnchor);
-                // this.child.scale([1, Math.max(0.1,zoomFactor)], this.state.scaleAnchor);
+                // if (this.h * zoomFactor < 5) return;
+                // this.scale([1, Math.max(0.1,zoomFactor)], this.state.scaleAnchor);
             } else {
-                // if (this.w * zoomFactor < CONSTANTS.PixelsPerFrame * 5) return;
-                console.log("setting scale context")
-                this.setContext('scale', [Math.max(0.1,zoomFactor), 1]);
-                this.setContext('scaleAnchor', this.internalState.scaleAnchor);
-                // this.child.scale([Math.max(0.1,zoomFactor), 1], this.state.scaleAnchor);
+                if (this.w * zoomFactor < CONSTANTS.PixelsPerFrame * 5) return;
+                // console.log("zooming")
+                const newBox = this.scale(this.state.cameraBox.clone(),[Math.max(0.1,zoomFactor), 1], this.state.scaleAnchor);
+                this.setState({...this.state, cameraBox: newBox});
             }
         } else {
             const [aDeltaX, aDeltaY] = canvasToAbsoluteMeasure([deltaX, deltaY]);
-            this.setContext('translate', [-aDeltaX, -aDeltaY]);
-            // this.child.translate([-aDeltaX, -aDeltaY]);
+            const newBox = this.translate(this.state.cameraBox.clone(),[-aDeltaX, -aDeltaY]);
+            this.setState({...this.state, cameraBox: newBox});
         }
         terminateEvent();
     }

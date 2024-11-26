@@ -80,22 +80,36 @@ abstract class CanvasWindow extends Box {
     state: any;
     setState(s: any) {
         if (this.state === s) throw new Error('Cannot set state to previous state. ');
+        if (this.windowDidMountPrimitiveIsRunning) {
+            this.state = s;
+            return;
+        }
         this._needsUpdate = true;
-        this.state = s;
-        if (this._root) this._root.scheduleUpdate();
+        this._root?.scheduleStateUpdate(this,s);
     }
 
     // context
     context: { [key: string]: any } = {};
     setContext(key: string, value: any) {
+        if (this.windowDidMountPrimitiveIsRunning) {
+            this.context[key] = value;
+            return;
+        }
         this._needsUpdate = true;
         this.context[key] = value;
-        if (this._root) this._root.scheduleUpdate();
+        this._root?.scheduleContextUpdate(this,key,value);
     }
 
 
 
     // lifecycle methods
+    windowDidMountPrimitiveIsRunning = false;
+    windowDidMountPrimitive(props: { [key: string] : any}) {
+        this.windowDidMountPrimitiveIsRunning = true;
+        this.windowDidMount(props);
+        this.windowDidMountPrimitiveIsRunning = false;
+    }
+
     windowDidMount(props: { [key: string] : any}) {};
     windowDidUpdate(props: { [key: string] : any}) {};
     cameraDidUpdate() {};
@@ -105,23 +119,39 @@ abstract class CanvasWindow extends Box {
     // the position is determined either by
     // overrriding the getBox method or by
     // overriding the o,w,h getters
+    
+    _boxSnapshot: Box | undefined;
+    getBoxPrimitive() : Box {
+        if (this._boxSnapshot) return this._boxSnapshot;
+        else {
+            const box = this.getBox();
+            this._boxSnapshot = box;
+            this._root?.expirePositionsAfterTaskCompletes();
+            return box;
+        }
+    }
 
     getBox() : Box {
         return new Box([0,0],0,0);
     }
 
     get o() {
-        return this.getBox().o;
+        return this.getBoxPrimitive().o;
     }
     get w() {
-        return this.getBox().w;
+        return this.getBoxPrimitive().w;
     }
-    get h() {;
-        return this.getBox().h;
+    get h() {
+        return this.getBoxPrimitive().h;
     }
 
     didMount : boolean = false;
     updateSelf() : void {
+
+        if (this._isPrimaryCamera) {
+            this._root?.installCamera(this)
+        }
+
         this._needsUpdate = false;
         if (!this.didMount) {
             this.didMount = true;
@@ -302,9 +332,9 @@ abstract class CanvasWindow extends Box {
         const absoluteToCanvasMeasure = this.absoluteToCanvasMeasure.bind(this);
         const canvasToAbsoluteMeasure = this.canvasToAbsoluteMeasure.bind(this);
 
-        const canvasUnit = this.canvasUnit;
-        const absoluteUnit = this.absoluteUnit;
-        const canvasO = this.canvasO;
+        const canvasUnit = [...this.canvasUnit] as Vec2;
+        const absoluteUnit = [...this.absoluteUnit] as Vec2;
+        const canvasO = [...this.canvasO] as Vec2;
 
         const canvasDimensions = [canvas.width, canvas.height] as Vec2;
         return {
@@ -338,6 +368,7 @@ abstract class CanvasWindow extends Box {
         const absoluteO = localToCanvas([0,0]);
 
 
+
         return {
             ...this.prepareHandlerProps(),
             localToCanvas,
@@ -354,7 +385,10 @@ abstract class CanvasWindow extends Box {
         const { absoluteUnit, canvasO } = h;
         const [aux,auy] = absoluteUnit;
         const [cx,cy] = canvasO;
-        const absolutePos = [cx + pos[0] * aux, cy + pos[1] * auy] as Vec2;
+        // const absolutePos = [cx + pos[0] * aux, cy + pos[1] * auy] as Vec2;
+        const absolutePos = add(this.canvasO, dotMultiply(this.canvasUnit, pos))
+
+        // console.log(canvasO)
         const relativePos = subtract(absolutePos, this.globalO);
         const pointInside = this.pointInside(absolutePos);
         return {
@@ -379,10 +413,12 @@ abstract class CanvasWindow extends Box {
     renderPrimitive(ctx: CanvasRenderingContext2D) {
         if (!this.render) return;
         const h = this.preparePostBoxHandlerProps();
+        ctx.save();
         this.render({
             ...h,
             ctx,
         });
+        ctx.restore();
     }
     render(props: RenderProps) {};
     

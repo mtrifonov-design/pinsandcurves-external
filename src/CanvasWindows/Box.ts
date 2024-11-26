@@ -49,6 +49,10 @@ class Box {
         return true;
     }
 
+    clone() : Box {
+        return new Box([...this.o], this.w, this.h);
+    }
+
 
     getBoundingBox(): Vec2[] {
         return [
