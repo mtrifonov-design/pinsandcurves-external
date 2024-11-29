@@ -57,9 +57,9 @@ export default [
   {
     input: "src/index.ts",
     output: [{ 
-      file: "dist/types/index.d.ts",
+      file: "dist/types/types.d.ts",
       format: "es",
-      // sourcemap: true,
+      sourcemap: true,
     }],
     plugins: [dts.default()],
   },

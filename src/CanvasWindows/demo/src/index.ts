@@ -6,13 +6,29 @@ import { add, dotMultiply } from "mathjs";
 
 const canvas = document.getElementById("demo-canvas") as HTMLCanvasElement;
 
+class MeasureWindow extends CanvasWindow {
+    getBox() {
+        return new Box([0,0],100,100);
+    }
+
+    render(r : RenderProps) {
+        this.strokeOutline(r,"black");
+    }
+}
+
+
 class RootWindow extends CanvasWindow {
     getChildren()  {
-        const w1 = ExampleWindow.Node({specialWindow: true});
-        const w2 = ExampleWindow.Node({specialWindow: false});
-        const w3 = ExampleWindow.Node({specialWindow: true});
-        const w4 = InteractiveCamera.Node();
-        return [w1,w2,w3,w4];
+        // const w1 = ExampleWindow.Node({specialWindow: true});
+        // const w2 = ExampleWindow.Node({specialWindow: false});
+        // const w3 = ExampleWindow.Node({specialWindow: true});
+        // const w4 = InteractiveCamera.Node();
+        // return [w1,w2,w3,w4];
+        const w = [];
+        for (let i = 0; i < 400; i++) {
+            w.push(MeasureWindow.Node());
+        }
+        return w;
     }
     windowDidUpdate(props: { [key: string]: any; }): void {
         console.log(this.key, "updated",props);

@@ -31,9 +31,11 @@ interface ProjectTools {
     addPinContinuous: (signalId: string, pinId: string, pinTime: number, pinValue: number, functionString: string, commit?: boolean) => void;
     addPinDiscrete: (signalId: string, pinId: string, pinTime: number, pinValue: string, commit?: boolean) => void;
     deletePin: (pinId: string) => void;
+    deletePins: (pinIds: string[]) => void;
     updatePins: (pinUpdateQueue: PinUpdateQueue, commit? :boolean) => void;
     updateCurve: (pinId: string, functionString: string) => void;
     createSignal: (signalId: string, signalType: 'continuous' | 'discrete', signalName: string, range?: [number, number]) => void;
+    duplicateSignal: (signalId: string) => void;
     deleteSignal: (signalId: string) => void;
     updateSignalName: (signalId: string, signalName: string) => void;
     updateSignalRange: (signalId: string, range: [number, number]) => void;
@@ -46,6 +48,7 @@ interface ProjectTools {
     undo: () => void;
     redo: () => void;
     returnToLastCommit: () => void;
+    pushUpdate: () => void;
 }
 
 interface PACProjectController {

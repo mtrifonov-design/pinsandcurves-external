@@ -17,7 +17,7 @@ class StateTimeWormClass<Object,Instruction> implements StateTimeWorm<Object,Ins
     constructor(
         public content: Object, 
         private __transformer: Transformer<Object,Instruction>, 
-        existingOrMaxSize: InternalWorm<Object,Instruction> | number = 100) {
+        existingOrMaxSize: InternalWorm<Object,Instruction> | number = 10000) {
             if (typeof existingOrMaxSize === 'number') {
                 if (existingOrMaxSize < 1) throw new Error('Max size must be greater than 0');
                 this.__internal = {

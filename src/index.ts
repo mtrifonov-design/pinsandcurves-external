@@ -19,3 +19,6 @@ export { InterpolateSignalValue };
 
 import * as CanvasWindows from './CanvasWindows';
 export { CanvasWindows };
+
+import * as PinsAndCurvesCanvasWindows from './PinsAndCurvesCanvasWindows';
+export { PinsAndCurvesCanvasWindows };
