@@ -12,6 +12,7 @@ class MeasureWindow extends CanvasWindow {
     }
 
     render(r : RenderProps) {
+        // console.log("rendering");
         this.strokeOutline(r,"black");
     }
 }
@@ -25,7 +26,7 @@ class RootWindow extends CanvasWindow {
         // const w4 = InteractiveCamera.Node();
         // return [w1,w2,w3,w4];
         const w = [];
-        for (let i = 0; i < 400; i++) {
+        for (let i = 0; i < 10000; i++) {
             w.push(MeasureWindow.Node());
         }
         return w;

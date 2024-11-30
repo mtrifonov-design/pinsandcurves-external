@@ -1,7 +1,9 @@
 import Box from './Box';
 import CanvasRoot from './Root';
 import { Vec2 } from './types';
-import { add, dotMultiply, subtract } from 'mathjs';
+import { add, dotMultiply, subtract } from './Utils';
+
+
 
 interface HandlerProps {
     canvasDimensions: Vec2;
@@ -249,12 +251,19 @@ abstract class CanvasWindow extends Box {
     }
 
     getBoundingBox(): Vec2[] {
+        const [ox,oy]= this.globalO;
         return [
-            this.globalO,
-            add(this.globalO, [this.w, 0]),
-            add(this.globalO, [this.w, this.h]),
-            add(this.globalO, [0, this.h]),
-        ];
+            [ox,oy],
+            [ox + this.w, oy],
+            [ox + this.w, oy + this.h],
+            [ox, oy + this.h],
+        ]
+        // return [
+        //     this.globalO,
+        //     add(this.globalO, [this.w, 0]),
+        //     add(this.globalO, [this.w, this.h]),
+        //     add(this.globalO, [0, this.h]),
+        // ];
     }
 
     pointInside(v: Vec2) : boolean {
@@ -263,7 +272,10 @@ abstract class CanvasWindow extends Box {
 
     get globalO() : Vec2 {
         if (!this._parent) return this.o;
-        return add(this._parent.globalO, this.o);
+        const [pgox,pgoy] = this._parent.globalO;
+        const [ox,oy] = this.o;
+        return [pgox + ox, pgoy + oy] as Vec2;
+        // return add(this._parent.globalO, this.o);
     }
 
     get globalKey() : string {
@@ -305,17 +317,17 @@ abstract class CanvasWindow extends Box {
     }
 
     absoluteToCanvasMeasure(v: Vec2) : Vec2 {
-        if (!this.displayConnected) throw new Error('Display not connected');
+        // if (!this.displayConnected) throw new Error('Display not connected');
         return dotMultiply(v, [this._canvas.width / this._cameraSnapshot.w, this._canvas.height / this._cameraSnapshot.h]);
     }
 
     canvasToAbsoluteMeasure(v: Vec2) : Vec2 {
-        if (!this.displayConnected) throw new Error('Display not connected');
+        // if (!this.displayConnected) throw new Error('Display not connected');
         return dotMultiply(v, [this._cameraSnapshot.w / this._canvas.width, this._cameraSnapshot.h / this._canvas.height]); 
     }
 
     get cameraSnapshot() {
-        if (!this.displayConnected) throw new Error('Display not connected');
+        // if (!this.displayConnected) throw new Error('Display not connected');
         return this._cameraSnapshot;
     }
 
@@ -325,16 +337,16 @@ abstract class CanvasWindow extends Box {
     }
 
     prepareHandlerProps() : HandlerProps {
-        if (!this.displayConnected) throw new Error('Display not connected');
+        // if (!this.displayConnected) throw new Error('Display not connected');
         const camera = this.cameraSnapshot;
         const canvas = this.canvas;
 
         const absoluteToCanvasMeasure = this.absoluteToCanvasMeasure.bind(this);
         const canvasToAbsoluteMeasure = this.canvasToAbsoluteMeasure.bind(this);
 
-        const canvasUnit = [...this.canvasUnit] as Vec2;
-        const absoluteUnit = [...this.absoluteUnit] as Vec2;
-        const canvasO = [...this.canvasO] as Vec2;
+        const canvasUnit = this.canvasUnit as Vec2;
+        const absoluteUnit = this.absoluteUnit as Vec2;
+        const canvasO = this.canvasO as Vec2;
 
         const canvasDimensions = [canvas.width, canvas.height] as Vec2;
         return {
@@ -349,15 +361,17 @@ abstract class CanvasWindow extends Box {
     }
 
     preparePostBoxHandlerProps() : PostBoxHandlerProps {
-        if (!this.displayConnected) throw new Error('Display not connected');
+        // if (!this.displayConnected) throw new Error('Display not connected');
         const camera = this._cameraSnapshot as Box;
         const canvas = this._canvas as HTMLCanvasElement;
-
         const localToCanvas = (v: Vec2) : Vec2 => {
             const globalO = this.globalO;
-            const globalPos = add(globalO, v);
-            const cameraPos = subtract(globalPos, camera.o);
-            return dotMultiply(cameraPos, [canvas.width / camera.w, canvas.height / camera.h]);
+            const [vx,vy] = v;
+            const [gox,goy] = globalO;
+            const [gpx,gpy] = [gox+vx,goy+vy];
+            const [cx,cy] = camera.o
+            const [cpx,cpy] = [gpx-cx,gpy-cy];
+            return [cpx * (canvas.width / camera.w), cpy * (canvas.height / camera.h)]
         }
         const canvasToLocal = (v: Vec2) : Vec2 => {
             const globalO = this.globalO;
@@ -366,8 +380,6 @@ abstract class CanvasWindow extends Box {
             return subtract(globalPos, globalO);
         }
         const absoluteO = localToCanvas([0,0]);
-
-
 
         return {
             ...this.prepareHandlerProps(),
@@ -380,13 +392,13 @@ abstract class CanvasWindow extends Box {
 
     private prepareMouseHandlerProps(pos: Vec2,terminateEvent: () => void) : MouseHandlerProps {
         const h = this.preparePostBoxHandlerProps();
-        const canvas = this._canvas as HTMLCanvasElement;
-        const camera = this._cameraSnapshot as Box;
-        const { absoluteUnit, canvasO } = h;
-        const [aux,auy] = absoluteUnit;
-        const [cx,cy] = canvasO;
-        // const absolutePos = [cx + pos[0] * aux, cy + pos[1] * auy] as Vec2;
-        const absolutePos = add(this.canvasO, dotMultiply(this.canvasUnit, pos))
+        const [cux,cuy] = this.canvasUnit;
+        const [cx,cy] = this.canvasO;
+        const [px,py] = pos;
+        const absolutePos = [cx + px * cux, cy + py * cuy] as Vec2;
+
+
+        // const absolutePos = add(this.canvasO, dotMultiply(this.canvasUnit, pos))
 
         // console.log(canvasO)
         const relativePos = subtract(absolutePos, this.globalO);

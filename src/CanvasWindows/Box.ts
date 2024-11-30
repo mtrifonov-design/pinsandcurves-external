@@ -1,5 +1,6 @@
 import type { Vec2 } from './types';
-import { add } from 'mathjs';
+import { add } from './Utils';
+
 
 
 class Box {

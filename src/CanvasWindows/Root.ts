@@ -76,6 +76,7 @@ class CanvasRoot {
         // the positionUpdateNeeded should be set to true after all code has run synchronously
         // as a microtask:
         if (this.positionExpirationScheduled) return;
+        this.positionExpirationScheduled = true;
         Promise.resolve().then(() => {
             this.expirePositions();
             this.positionExpirationScheduled = false;

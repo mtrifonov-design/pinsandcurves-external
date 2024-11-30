@@ -5,6 +5,7 @@ interface PinsAndCurvesProjectInstructionTypes {
   deletePin: { type: 'deletePin'; pinId: string }
   updatePinTime: { type: 'updatePinTime'; pinId: string; pinTime: number }
   updatePinValue: { type: 'updatePinValue'; pinId: string; pinValue: number | string }
+  updatePins: { type: 'updatePins'; pins: { pinId: string; pinTime: number; pinValue: number | string, functionString?: string }[] }
   updateCurve: { type: 'updateCurve'; pinId: string; functionString: string }
   createSignal: { type: 'createSignal'; signalId: string; signalType: 'continuous' | 'discrete'; signalName: string; range?: [number, number] }
   deleteSignal: { type: 'deleteSignal'; signalId: string }

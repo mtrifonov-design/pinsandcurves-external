@@ -83,6 +83,10 @@ function updatePinTime(draft: Project, instruction: InstructionTypes['updatePinT
     if (!found) throw new Error(`Pin with id ${pinId} not found`);
 }
 
+function updatePins(draft: Project, instruction: InstructionTypes['updatePins']) {}
+
+
+
 function updatePinValue(draft: Project, instruction: InstructionTypes['updatePinValue']) {
     const { pinId, pinValue } = instruction;
     let found = false;
