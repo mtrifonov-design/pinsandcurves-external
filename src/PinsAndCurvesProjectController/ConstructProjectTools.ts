@@ -111,7 +111,7 @@ function __idleCommand() : WormCommand {
 }
 
 
-function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => WormCommand) => void, getProject: () => Project) : ProjectTools {
+function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => WormCommand) => void, pushCommands: (w: () => WormCommand[]) => void, getProject: () => Project) : ProjectTools {
 
     function returnToCommit() {
         pushCommand(() => returnToCommitCommand)
@@ -134,31 +134,90 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                 const signal = project.signalData[signalId] as ContinuousSignal;
                 const pinTimes = signal.pinTimes;
                 const existingPinIdIdx = signal.pinIds.findIndex(existingPinId => pinTimes[existingPinId] === pinTime);
+
+                const forwardInstructions : Instruction[] = [];
                 if (existingPinIdIdx !== -1) {
-                    return __deletePinCommand(getProject, signal.pinIds[existingPinIdIdx]);
+                    forwardInstructions.push({
+                        type: 'deletePin',
+                        pinId: signal.pinIds[existingPinIdIdx]
+                    });
                 }
-                return __idleCommand()
+                forwardInstructions.push(__addPinInstruction(signalId, pinId, pinTime, pinValue, functionString));
+                const backwardInstructions : Instruction[] = [];
+                backwardInstructions.push({
+                    type: 'deletePin',
+                    pinId  
+                });
+                if (existingPinIdIdx !== -1) {
+                    const existingPinId = signal.pinIds[existingPinIdIdx] as string;
+                    backwardInstructions.push(__addPinInstruction(signalId, existingPinId, signal.pinTimes[existingPinId] as number, signal.pinValues[existingPinId] as number, signal.curves[existingPinId] as string));
+                }
+                return {
+                    type: 'addNextState',
+                    forward: forwardInstructions,
+                    backward: backwardInstructions
+                }
             });
-            pushCommand(() => {
-                return __addPinContinuousCommand(signalId, pinId, pinTime, pinValue, functionString)
-            })
+            // pushCommand(() => {
+            //     const project = getProject();
+            //     const signal = project.signalData[signalId] as ContinuousSignal;
+            //     const pinTimes = signal.pinTimes;
+            //     const existingPinIdIdx = signal.pinIds.findIndex(existingPinId => pinTimes[existingPinId] === pinTime);
+            //     if (existingPinIdIdx !== -1) {
+            //         return __deletePinCommand(getProject, signal.pinIds[existingPinIdIdx]);
+            //     }
+            //     return __idleCommand()
+            // });
+            // pushCommand(() => {
+            //     return __addPinContinuousCommand(signalId, pinId, pinTime, pinValue, functionString)
+            // })
             if (commit) {pushCommit(),pushUpdate()}
         },
         addPinDiscrete(signalId: string, pinId: string, pinTime: number, pinValue: string, commit?: boolean) : void {
-            if (commit) returnToCommit()
+            if (commit) returnToCommit();
             pushCommand(() => {
                 const project = getProject();
-                const signal = project.signalData[signalId] as ContinuousSignal;
+                const signal = project.signalData[signalId] as DiscreteSignal;
                 const pinTimes = signal.pinTimes;
                 const existingPinIdIdx = signal.pinIds.findIndex(existingPinId => pinTimes[existingPinId] === pinTime);
+                const forwardInstructions : Instruction[] = [];
                 if (existingPinIdIdx !== -1) {
-                    return __deletePinCommand(getProject, signal.pinIds[existingPinIdIdx]);
+                    forwardInstructions.push({
+                        type: 'deletePin',
+                        pinId: signal.pinIds[existingPinIdIdx]
+                    });
                 }
-                return __idleCommand()
+                forwardInstructions.push(__addPinInstruction(signalId, pinId, pinTime, pinValue));
+                const backwardInstructions : Instruction[] = [];
+                backwardInstructions.push({
+                    type: 'deletePin',
+                    pinId  
+                });
+                if (existingPinIdIdx !== -1) {
+                    const existingPinId = signal.pinIds[existingPinIdIdx] as string;
+                    backwardInstructions.push(__addPinInstruction(signalId, existingPinId, signal.pinTimes[existingPinId] as number, signal.pinValues[existingPinId] as string));
+                }
+                return {
+                    type: 'addNextState',
+                    forward: forwardInstructions,
+                    backward: backwardInstructions
+                }
             });
-            pushCommand(() => {
-                return __addPinDiscreteCommand(signalId, pinId, pinTime, pinValue)
-            })
+
+
+            // pushCommand(() => {
+            //     const project = getProject();
+            //     const signal = project.signalData[signalId] as ContinuousSignal;
+            //     const pinTimes = signal.pinTimes;
+            //     const existingPinIdIdx = signal.pinIds.findIndex(existingPinId => pinTimes[existingPinId] === pinTime);
+            //     if (existingPinIdIdx !== -1) {
+            //         return __deletePinCommand(getProject, signal.pinIds[existingPinIdIdx]);
+            //     }
+            //     return __idleCommand()
+            // });
+            // pushCommand(() => {
+            //     return __addPinDiscreteCommand(signalId, pinId, pinTime, pinValue)
+            // })
             if (commit) {pushCommit(),pushUpdate()}
         },
         deletePin(pinId: string) : void {

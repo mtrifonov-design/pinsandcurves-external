@@ -56,10 +56,10 @@ class StateTimeWormClass<Object,Instruction> implements StateTimeWorm<Object,Ins
         const currentState = this.__internal.cursor;
         const instructions = this.__internal.states[currentState].forward;
         this.__internal.cursor = nextState;
-        for (let i = 0; i < instructions.length; i++) {
-            this.content = this.__transformer(this.content, instructions[i]);
-        }
-        //this.content = instructions.reduce(this.__transformer, this.content);
+        // for (let i = 0; i < instructions.length; i++) {
+        //     this.content = this.__transformer(this.content, instructions[i]);
+        // }
+        this.content = this.__transformer(this.content, instructions)
         return {success: true, message: 'Next state reached'};
     }
 
@@ -69,10 +69,10 @@ class StateTimeWormClass<Object,Instruction> implements StateTimeWorm<Object,Ins
         const currentState = this.__internal.cursor;
         const instructions = this.__internal.states[currentState].backward;
         this.__internal.cursor = previousState;
-        //this.content = instructions.reduce(this.__transformer, this.content);
-        for (let i = 0; i < instructions.length; i++) {
-            this.content = this.__transformer(this.content, instructions[i]);
-        }
+        // for (let i = 0; i < instructions.length; i++) {
+        //     this.content = this.__transformer(this.content, instructions[i]);
+        // }
+        this.content = this.__transformer(this.content, instructions)
         return {success: true, message: 'Previous state reached'};
     }
 
@@ -154,7 +154,8 @@ class StateTimeWormClass<Object,Instruction> implements StateTimeWorm<Object,Ins
             };
             this.__internal.states[currentState].nextState = newState;
             this.__internal.cursor = newState;
-            this.content = forward.reduce(this.__transformer, this.content);
+            this.content = this.__transformer(this.content,forward)
+            // this.content = forward.reduce(this.__transformer, this.content);
         }
         {
             // Trim Worm
@@ -221,6 +222,7 @@ class StateTimeWormClass<Object,Instruction> implements StateTimeWorm<Object,Ins
     }
 
     executeCommands(commands: WormCommand<Instruction>[]) : void {
+        // find consecutive 
         commands.forEach(command => this.executeCommand(command));
     }
 

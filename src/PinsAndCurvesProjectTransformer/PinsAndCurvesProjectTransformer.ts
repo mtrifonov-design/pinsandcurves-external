@@ -38,11 +38,16 @@ const transformers : Transformers = {
 
 function PinsAndCurvesProjectTransformer<K extends InstructionTypeKeys>(
   project: Project,
-  instruction: InstructionTypes[K]
+  instructions: InstructionTypes[K][]
 ): Project {
   return produce(project, (draft) => {
-    const transformer = transformers[instruction.type] as Transformer<K>;
-    transformer(draft, instruction);
+    for (let i = 0; i < instructions.length; i++) {
+      const instruction = instructions[i];
+      const transformer = transformers[instruction.type] as Transformer<K>;
+      transformer(draft, instruction);
+    }
+    // const transformer = transformers[instruction.type] as Transformer<K>;
+    // transformer(draft, instruction);
   });
 }
 

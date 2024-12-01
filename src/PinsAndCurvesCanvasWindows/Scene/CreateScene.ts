@@ -8,6 +8,7 @@ import modeMenu_ from "./UIElements/modeMenu";
 import uiIsland_ from "./UIElements/uiIsland";
 import renderButton_ from "./UIElements/renderButton";
 import Scene from "./Scene";
+import { throttle } from "lodash";
 
 function getController(dispatch: any, config: SceneConfig) {
     // check if project in local storage
@@ -95,12 +96,13 @@ function CreateScene(objects: ((parent: CanvasWindow | CanvasRoot) => CanvasWin
         root.clickHandler([x,y],e);
     });
 
-    canvas.addEventListener("mousemove", (e) => {
+    const throttledMouseMove = throttle((e: MouseEvent) => {
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         root.mouseMoveHandler([x,y],e);
     });
+    canvas.addEventListener("mousemove", throttledMouseMove);
 
     canvas.addEventListener("mousedown", (e) => {
         const rect = canvas.getBoundingClientRect();

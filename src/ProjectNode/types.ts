@@ -32,7 +32,7 @@ type ProjectNodeEvent<Project, ProjectInstruction> =
 
 interface ProjectNodeProps<Project, ProjectInstruction> {
   dispatch: (e: ProjectNodeEvent<Project, ProjectInstruction>) => void;
-  projectTransformer: (project: Project, instruction: ProjectInstruction) => Project;
+  projectTransformer: (project: Project, instructions: ProjectInstruction[]) => Project;
 }
 
 interface HostProjectNodeProps<Project, ProjectInstruction> extends ProjectNodeProps<Project, ProjectInstruction> {

@@ -56,7 +56,7 @@ class VectorHandleBox extends SignalWindow {
     getChildren(props?: { [key: string]: any; } | undefined): ((parent: CanvasWindow) => CanvasWindow)[] {
         // return [TestNode.Node({})];
         // return [Crosshair.Node({o: [0,0], alpha: 0.5})];
-        return [Crosshair.Node({o: [0,0], dragging: this.state.dragging})];
+        return [Crosshair.Node({o: [0,0], dragging: this.state.dragging, anchor: this.props.anchor})];
     }
 
     getBox(props?: Props) {
@@ -68,32 +68,69 @@ class VectorHandleBox extends SignalWindow {
         if (p.pointInside && this.context.mode === "record") this.setState({dragging: true});
     }
 
-    chooseSetSignalValueFunction(id: string, value: number | string, commit: boolean, range? : [number,number]) {
-        if (this.props.topProps.type === 'discrete') {
-            this.setDiscreteSignalValue(id,value as string,commit);
-        } else {
-            if (!range) throw new Error("Range not defined for continuous signal");
-            this.setContinuousSignalValue(id,value as number,commit,range);
+    chooseSetSignalValueFunction(id: string, value: any, commit: boolean) {
+        // if (this.props.topProps.type === 'discrete') {
+        //     this.setDiscreteSignalValue(id,value as string,commit);
+        // } else {
+        //     if (!range) throw new Error("Range not defined for continuous signal");
+        //     this.setContinuousSignalValue(id,value as number,commit,range);
+        // }
+        const type = this.props.topProps.type;
+        const { angle, magnitude, vector, range,rangeX, rangeY } = value;
+
+        switch (this.props.topProps.degreesOfFreedom) {
+            case "1-angular":
+                {
+                    if (type === 'discrete') {
+                        this.setDiscreteSignalValue(id,JSON.stringify({angle}),commit);
+                    } else {
+                        this.setContinuousSignalValue(id,angle,commit,range);
+                    }
+                }
+                break;
+            case "1-normal":
+                {
+                    if (type === 'discrete') {
+                        this.setDiscreteSignalValue(id,JSON.stringify({magnitude}),commit);
+                    } else {
+                        this.setContinuousSignalValue(id,magnitude,commit,range);
+                    }
+                }
+                break;
+            case "2-cartesian":
+                {
+                    if (type === 'discrete') {
+                        this.setDiscreteSignalValue(id,JSON.stringify({vector}),commit);
+                    } else {
+                        this.setContinuousSignalValue(id+"_x",vector[0],commit,rangeX);
+                        this.setContinuousSignalValue(id+"_y",vector[1],commit,rangeY);
+                    }
+                }
+                break;
         }
-        this.context.projectTools.pushUpdate();
+
+
     }
 
     moveHandle(p: MouseHandlerProps,commit: boolean) {
-        console.log("Moving handle");
+        // console.log("Moving handle",this.globalKey);
+        this.context.projectTools.returnToLastCommit();
+        let value = {};
         switch (this.props.topProps.degreesOfFreedom) {
             case "1-angular":
                 {                
-                    const [ox,oy] = this.context.anchor;
+                    const [ox,oy] = this.props.anchor;
                     const [x,y] = p.absolutePos;
                     const dx = x - ox;
                     const dy = y - oy;
                     const angle = Math.atan2(dy,dx);
-                    this.chooseSetSignalValueFunction(this.props.topProps.id,angle,commit,[-Math.PI,Math.PI]);
+                    value = { angle, range: [-Math.PI,Math.PI] };
+                    // this.chooseSetSignalValueFunction(this.props.topProps.id,angle,commit,[-Math.PI,Math.PI]);
                     break;
                 }
             case "1-normal":
                 {
-                    const dv = subtract(p.absolutePos,this.context.anchor);
+                    const dv = subtract(p.absolutePos,this.props.anchor);
                     // now project on the initial direction
                     if (!this.props.topProps.initialDirection) throw new Error("Initial direction not defined for 1-normal handle");
                     const dir = this.props.topProps.initialDirection;
@@ -104,12 +141,13 @@ class VectorHandleBox extends SignalWindow {
                     if (!range) throw new Error("Range not defined for 1-normal handle");
                     const sign = Math.sign(projecP);
                     const mag = clamp(sign * norm(projec),range[0],range[1]);
-                    this.chooseSetSignalValueFunction(this.props.topProps.id,mag,commit,range);
+                    value = { magnitude: mag, range };
+                    // this.chooseSetSignalValueFunction(this.props.topProps.id,mag,commit,range);
                     break;
                 }
             case "2-cartesian":
                 {
-                    let [dx,dy] = subtract(p.absolutePos,this.context.anchor);
+                    let [dx,dy] = subtract(p.absolutePos,this.props.anchor);
                     let rangeX = this.props.topProps.rangeX;
                     let rangeY = this.props.topProps.rangeY;
                     if (!rangeX || !rangeY) {
@@ -119,10 +157,13 @@ class VectorHandleBox extends SignalWindow {
                         rangeY = range;
                     }
                     [dx,dy] = [clamp(dx,rangeX[0],rangeX[1]),clamp(dy,rangeY[0],rangeY[1])];
-                    this.chooseSetSignalValueFunction(this.props.topProps.id+"_x",dx,commit,rangeX);
-                    this.chooseSetSignalValueFunction(this.props.topProps.id+"_y",dy,commit,rangeY);
+                    value = { x: dx, y: dy, rangeX, rangeY };
+                    // this.chooseSetSignalValueFunction(this.props.topProps.id+"_x",dx,commit,rangeX);
+                    // this.chooseSetSignalValueFunction(this.props.topProps.id+"_y",dy,commit,rangeY);
                 }
         }
+        this.chooseSetSignalValueFunction(this.props.topProps.id,value,commit);
+        this.context.projectTools.pushUpdate();
 
     }
     onMouseMove(p: MouseHandlerProps, e: MouseEvent): void {
@@ -148,8 +189,8 @@ class OnionSkin extends SignalWindow {
         const [cux,cuy] = this.canvasUnit;
         const displacement = [(side/2) * cux,(side/2) * cuy] as Vec2;
         return [
-            Crosshair.Node({o: subtract(v1 as Vec2,displacement), alpha: 0.5}),
-            Crosshair.Node({o: subtract(v2 as Vec2,displacement), alpha: 0.5}),
+            Crosshair.Node({o: subtract(v1 as Vec2,displacement), alpha: 0.5, anchor: this.props.anchor}),
+            Crosshair.Node({o: subtract(v2 as Vec2,displacement), alpha: 0.5, anchor: this.props.anchor}),
         ];
     }
 
@@ -200,14 +241,14 @@ class OnionSkin extends SignalWindow {
         switch (this.props.topProps.degreesOfFreedom) {
             case "1-angular":
                 {
-                    const [ox,oy] = this.context.anchor;
+                    const [ox,oy] = this.props.anchor;
                     [x1,y1] = [ox + Math.cos(previousAngle),oy + Math.sin(previousAngle)];
                     [x2,y2] = [ox + Math.cos(nextAngle),oy + Math.sin(nextAngle)];
                     break;
                 }
             case "1-normal":
                 {
-                    const [ox,oy] = this.context.anchor;
+                    const [ox,oy] = this.props.anchor;
                     const [dx,dy] = this.props.topProps.initialDirection;
                     [x1,y1] = [ox + dx * previousMag,oy + dy * previousMag];
                     [x2,y2] = [ox + dx * nextMag,oy + dy * nextMag];
@@ -215,7 +256,7 @@ class OnionSkin extends SignalWindow {
                 }
             case "2-cartesian":
                 {
-                    const [ox,oy] = this.context.anchor;
+                    const [ox,oy] = this.props.anchor;
                     [x1,y1] = [ox + previousVector[0],oy + previousVector[1]];
                     [x2,y2] = [ox + nextVector[0],oy + nextVector[1]];
                     break;
@@ -247,27 +288,29 @@ interface Props {
 
 class VectorHandle extends SignalWindow {
 
-    windowDidMount(props: Props): void {
-        this.setContext('anchor',this.parentO)
-    }
+    // windowDidMount(props: Props): void {
+    //     this.setContext('anchor',this.parentO)
+    // }
 
 
     getChildren(props?: { [key: string]: any; } | undefined): ((parent: CanvasWindow) => CanvasWindow)[] {
-        const children = this.props.children ? this.props.children : [];
-        children.push(VectorHandleBox.Node({id: this.props.id, topProps: this.props}));
-        if (this.props.onionSkin) children.push(OnionSkin.Node({id: this.props.id, topProps: this.props}));
+        const children = this.props.children ? [...this.props.children] : [];
+        children.push(VectorHandleBox.Node({id: this.props.id, topProps: this.props, anchor: this.parentO}));
+        if (this.props.onionSkin) children.push(OnionSkin.Node({id: this.props.id, topProps: this.props, anchor: this.parentO}));
         return children;
     }
 
-    retrieveSignalValue(id: string) {
+    retrieveSignalValue(id: string) : number | Vec2 {
         if (this.props.type === 'discrete') {
             const discreteValue = this.useDiscreteSignal(id,this.context.project.timelineData.playheadPosition);
-            let obj;
+            let obj = {
+                angle: 0,
+                magnitude: 0,
+                vector: [0,0] as Vec2,
+            };
             try {
                 obj = JSON.parse(discreteValue);
-            } catch {
-                throw new Error(`Could not parse discrete signal value for ${id}`);
-            }
+            } catch {}
             switch (this.props.degreesOfFreedom) {
                 case "1-angular":
                     return obj.angle;
@@ -275,6 +318,8 @@ class VectorHandle extends SignalWindow {
                     return obj.magnitude;
                 case "2-cartesian":
                     return obj.vector;
+                default:
+                    throw new Error("Degrees of freedom not defined for VectorHandle");
             }
         } else {
             switch (this.props.degreesOfFreedom) {
@@ -294,6 +339,8 @@ class VectorHandle extends SignalWindow {
                     const x = this.useContinuousSignal(id+"_x",rangeX);
                     const y = this.useContinuousSignal(id+"_y",rangeY);
                     return [x,y] as Vec2;
+                default:
+                    throw new Error("Degrees of freedom not defined for VectorHandle");
             }
         }
     }
@@ -304,21 +351,21 @@ class VectorHandle extends SignalWindow {
         //console.log(this.props);
         switch (this.props.degreesOfFreedom) {
             case "1-angular":
-                    const angle = this.retrieveSignalValue(this.props.id);
+                    const angle = this.retrieveSignalValue(this.props.id) as number;
                     if (!this.props.initialLength) throw new Error("Initial length not defined for 1-angular handle");
                     const l = this.props.initialLength;
                     [x,y] = [l*Math.cos(angle),l*Math.sin(angle)];
                     break;
                 
             case "1-normal":
-                    const mag = this.retrieveSignalValue(this.props.id);
+                    const mag = this.retrieveSignalValue(this.props.id) as number;
                     if (!this.props.initialDirection) throw new Error("Initial direction not defined for 1-normal handle");
-                    const [dx,dy] = this.props.initialDirection;
+                    const [dx,dy] = scale(this.props.initialDirection,1/norm(this.props.initialDirection));
                     [x,y] = [dx * mag,dy * mag];
                     break;
                 
             case "2-cartesian":
-                    [x,y] = this.retrieveSignalValue(this.props.id);
+                    [x,y] = this.retrieveSignalValue(this.props.id) as Vec2;
                     break;
             default:
                 throw new Error("Degrees of freedom not defined for VectorHandle");

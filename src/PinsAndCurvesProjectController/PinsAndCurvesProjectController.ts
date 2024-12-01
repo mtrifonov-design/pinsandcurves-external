@@ -5,7 +5,7 @@ import { ProjectNodeEvent } from "../ProjectNode";
 
 const HostProjectNode = ProjectNode.HostProjectNode;
 const ClientProjectNode = ProjectNode.ClientProjectNode;
-const transformer : (p:Project,i:Instruction) => Project = PinsAndCurvesProjectTransformer.PinsAndCurvesProjectTransformer;
+const transformer : (p:Project,i:Instruction[]) => Project = PinsAndCurvesProjectTransformer.PinsAndCurvesProjectTransformer;
 //const interpolateSignalValue = InterpolateSignalValue.interpolateSignalValue;
 type InterpolateSignalReturnType = InterpolateSignalValue.InterpolateSignalReturnType;
 
@@ -78,8 +78,9 @@ class PACProjectControllerClass {
         const pushUpdate = this.projectNode.pushUpdate.bind(this.projectNode);
         const getProject = this.projectNode.getProject.bind(this.projectNode);
         const pushCommand = this.projectNode.pushCommand.bind(this.projectNode);
+        const pushCommands = this.projectNode.pushCommands.bind(this.projectNode);
 
-        return constructProjectTools(pushUpdate,pushCommand,getProject);
+        return constructProjectTools(pushUpdate,pushCommand,pushCommands,getProject);
     }
 
     getProject() {

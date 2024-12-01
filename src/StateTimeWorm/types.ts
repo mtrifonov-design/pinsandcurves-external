@@ -19,7 +19,7 @@ interface InternalWorm<Object,Instruction> {
     maxSize: number;
 }
 
-type Transformer<Object,Instruction> = (object: Object, instruction: Instruction) => Object;
+type Transformer<Object,Instruction> = (object: Object, instructions: Instruction[]) => Object;
 
 interface StateTimeWorm<Object,Instruction> {
     content: Object;

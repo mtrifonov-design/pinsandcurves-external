@@ -46,6 +46,19 @@ abstract class ProjectNodeBase<Project, ProjectInstruction> {
     }
   }
 
+  pushCommands(commandsFunction: () => w.WormCommand<ProjectInstruction>[]) {
+    if (!this.worm || !this.projectStateId)
+      throw new Error("Worm not initialized");
+    try {
+      const commands = commandsFunction();
+      this.worm.executeCommands(commands);
+      this.update.push(...commands);
+    } catch (e) {
+      console.error(e);
+    }
+
+  }
+
   pushUpdate() {
     if (!this.worm || !this.projectStateId)
       throw new Error("Worm not initialized");
@@ -154,7 +167,7 @@ class ClientProjectNode<Project, ProjectInstruction> extends ProjectNodeBase<Pro
   worm?: w.StateTimeWorm<Project, ProjectInstruction>;
   projectStateId?: string;
   host: boolean = false;
-  __projectTransformer: (project: Project, instruction: ProjectInstruction) => Project;
+  __projectTransformer: (project: Project, instructions: ProjectInstruction[]) => Project;
   projectRequestCallbacks: { [key: string]: Function } = {};
 
   constructor(props: ProjectNodeProps<Project, ProjectInstruction>) {
