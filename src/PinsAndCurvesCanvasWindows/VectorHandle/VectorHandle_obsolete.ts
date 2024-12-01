@@ -1,6 +1,6 @@
 import { add, subtract } from "mathjs";
-import { MouseHandlerProps, RenderProps,Box, Vec2 } from "./Dependencies";
-import SignalWindow from "./SignalWindow";
+import { MouseHandlerProps, RenderProps,Box, Vec2 } from "../Dependencies";
+import SignalWindow from "../SignalWindow";
 
 const side = 25;
 

@@ -21,6 +21,7 @@ const transformers : Transformers = {
     deletePin : t.deletePin,
     updatePinTime : t.updatePinTime,
     updatePinValue : t.updatePinValue,
+    updatePins : t.updatePins,
     updateCurve : t.updateCurve,
     createSignal : t.createSignal,
     deleteSignal : t.deleteSignal,

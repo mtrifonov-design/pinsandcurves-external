@@ -83,6 +83,7 @@ abstract class CanvasWindow extends Box {
     setState(s: any) {
         if (this.state === s) throw new Error('Cannot set state to previous state. ');
         if (this.windowDidMountPrimitiveIsRunning) {
+            // console.log('setting state',s);
             this.state = s;
             return;
         }
@@ -157,7 +158,7 @@ abstract class CanvasWindow extends Box {
         this._needsUpdate = false;
         if (!this.didMount) {
             this.didMount = true;
-            this.windowDidMount({ ... this.props });
+            this.windowDidMountPrimitive({ ... this.props });
         }
         this.updateChildren();
         this.windowDidUpdate({ ... this.props });

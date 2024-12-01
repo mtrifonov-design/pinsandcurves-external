@@ -15,9 +15,10 @@ class Camera extends CanvasWindow {
     }
 
     get canvasDimensions() : Vec2 {
-        const [w,h] = [this.context.dimensions.width * 3, this.context.dimensions.height * 3];
-        const [cw,ch] = this.displayDimensions;
-        return [Math.max(w,cw),Math.max(h,ch)];
+        // const [w,h] = [this.context.dimensions.width * 3, this.context.dimensions.height * 3];
+        // const [cw,ch] = this.displayDimensions;
+        // return [Math.max(w,cw),Math.max(h,ch)];
+        return this.context.workingCanvasDimensions;
     }
     
     translate(oldCamera: Box, v: Vec2) : Box {
@@ -108,8 +109,18 @@ class Camera extends CanvasWindow {
         const newH = h * v[1];
 
         const [adx,ady] = [a[0] - o[0], a[1] - o[1]];
+
+        const [cux,cuy] = this.canvasUnit;
+        const [adcx,adcy] = [adx * cux, ady * cuy];
+        const [aix,aiy] = [adx * v[0], ady * v[1]];
+        const [aicx,aicy] = [aix * cux, aiy * cuy];
+        const [dcx,dcy] = [adcx - aicx, adcy - aicy];
+        const [aux,auy] = this.absoluteUnit;
+        const difference = [dcx * aux, dcy * auy] as Vec2;
+
         const anchorImage = [o[0] + adx * v[0], o[1] + ady * v[1]];
-        const difference = subtract(a,anchorImage) as Vec2;
+        const _difference = subtract(a,anchorImage) as Vec2;
+        console.log(adx,ady)
 
         w = newW;
         h = newH;
@@ -121,7 +132,7 @@ class Camera extends CanvasWindow {
     }
 
     getBox(): Box {
-        // // // console.log(this.state)
+        // console.log(this.state)
         return this.state.cameraBox;
     }
 
@@ -135,7 +146,8 @@ class InteractiveCamera extends Camera {
         // // console.log("InteractiveCamera mounted")
         const [dx,dy] = this.displayDimensions;
         const [cx,cy] = this.canvasDimensions;
-        const proposedBox = new Box([cx / 2 - dx / 2, this.canvasDimensions[1] * 1/3],this.displayDimensions[0],this.displayDimensions[1]);
+        const proposedBox = new Box([cx / 2 - dx / 2, cy / 2 - dy / 2],dx,dy);
+        console.log(proposedBox)
         const box = this.translate(proposedBox, [0,0]);
         this.setState({
             isPanning: false,
@@ -177,7 +189,7 @@ class InteractiveCamera extends Camera {
         const { terminateEvent, canvasPos, absolutePos, canvasUnit } = p;
         const [cux,cuy] = canvasUnit;
         let newState = { ...this.state };
-        this.scaleAnchor = canvasPos;
+        this.scaleAnchor = absolutePos;
         // // console.log(this.state.isPanning)
         if (this.state.isPanning) {
             // console.log("PANNING")

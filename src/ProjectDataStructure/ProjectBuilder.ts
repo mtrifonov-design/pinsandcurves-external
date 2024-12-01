@@ -47,6 +47,8 @@ class ProjectBuilder {
     addPin(signalId: string, pinTime: number, pinValue: number | string, curve?: string) {
         const signal = this._project.signalData[signalId] as Signal;
         const pinId = generateId();
+        this._project.orgData.pinIds.push(pinId);
+        this._project.orgData.signalIdByPinId[pinId] = signalId;
         if (signal.type === 'continuous') {
             signal.pinIds.push(pinId);
             signal.pinTimes[pinId] = pinTime;

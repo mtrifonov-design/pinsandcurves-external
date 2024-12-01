@@ -179,102 +179,146 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
             pushCommit()
             pushUpdate()
         },
+        // updatePins(pinUpdateQueue: PinUpdateQueue, commit?: boolean) : void {
+        //     if (commit) returnToCommit()
+        //     pinUpdateQueue.forEach(pinUpdate => {
+        //         if (pinUpdate.pinType ==='continuous') {
+        //             const {pinId, pinTime, pinValue, functionString} = pinUpdate;
+        //             pushCommand(() => {
+        //                 const project = getProject();
+        //                 const signalId = Object.keys(project.signalData).find(signalId => project.signalData[signalId]?.pinIds.includes(pinId));
+        //                 if (!signalId) throw new Error("Pin not found");
+        //                 const signalType = (project.signalData[signalId] as Signal).type;
+        //                 if (signalType === 'discrete') throw new Error("Cannot update continuous pin of discrete signal");
+        //                 const pinTimes = (project.signalData[signalId] as Signal).pinTimes;
+        //                 const pinValues = (project.signalData[signalId] as Signal).pinValues;
+        //                 const curves = (project.signalData[signalId] as ContinuousSignal).curves;
+        //                 const newPinValue = pinValue ?? pinValues[pinId] as number;
+        //                 const newPinTime = pinTime ?? pinTimes[pinId] as number;
+        //                 const newFunctionString = functionString ?? curves[pinId] as string;
+        //                 return {
+        //                 type: 'addNextState',
+        //                 forward: [
+        //                     {
+        //                         type: 'updatePinValue',
+        //                         pinId,
+        //                         pinValue: newPinValue
+        //                     },
+        //                     {
+        //                         type: 'updatePinTime',
+        //                         pinId,
+        //                         pinTime: newPinTime
+        //                     },
+        //                     {
+        //                         type: 'updateCurve',
+        //                         pinId,
+        //                         functionString: newFunctionString
+        //                     }
+        //                 ],
+        //                 backward: [
+        //                     {
+        //                         type: 'updatePinValue',
+        //                         pinId,
+        //                         pinValue: pinValues[pinId] as number
+        //                     },
+        //                     {
+        //                         type: 'updatePinTime',
+        //                         pinId,
+        //                         pinTime: pinTimes[pinId] as number
+        //                     },
+        //                     {
+        //                         type: 'updateCurve',
+        //                         pinId,
+        //                         functionString: curves[pinId] as string
+        //                     }
+        //                 ]
+        //             }})
+        //         }
+        //         if (pinUpdate.pinType === 'discrete') {
+        //             const {pinId, pinTime, pinValue} = pinUpdate;
+        //             pushCommand(() => {
+        //                 const project = getProject();
+        //                 const signalId = Object.keys(project.signalData).find(signalId => project.signalData[signalId]?.pinIds.includes(pinId));
+        //                 if (!signalId) throw new Error("Pin not found");
+        //                 const signalType = (project.signalData[signalId] as Signal).type;
+        //                 if (signalType === 'continuous') throw new Error("Cannot update discrete pin of continuous signal");
+        //                 const pinTimes = (project.signalData[signalId] as Signal).pinTimes;
+        //                 const pinValues = (project.signalData[signalId] as Signal).pinValues;
+        //                 const newPinValue = pinValue ?? pinValues[pinId] as string;
+        //                 const newPinTime = pinTime ?? pinTimes[pinId] as number;
+        //                 return {
+        //                 type: 'addNextState',
+        //                 forward: [
+        //                     {
+        //                         type: 'updatePinValue',
+        //                         pinId,
+        //                         pinValue: newPinValue
+        //                     },
+        //                     {
+        //                         type: 'updatePinTime',
+        //                         pinId,
+        //                         pinTime: newPinTime
+        //                     }
+        //                 ],
+        //                 backward: [
+        //                     {
+        //                         type: 'updatePinValue',
+        //                         pinId,
+        //                         pinValue: pinValues[pinId] as string
+        //                     },
+        //                     {
+        //                         type: 'updatePinTime',
+        //                         pinId,
+        //                         pinTime: pinTimes[pinId] as number
+        //                     }
+        //                 ]
+        //             }})
+        //         }
+        //     });
+        //     if (commit) {pushCommit()}
+        //     pushUpdate()
+        // },
         updatePins(pinUpdateQueue: PinUpdateQueue, commit?: boolean) : void {
-            if (commit) returnToCommit()
+            if (commit) returnToCommit();
+            const project = getProject();
+            const forwardUpdates : Instruction = {
+                type: 'updatePins',
+                pins: []
+            };
+            const backwardUpdates : Instruction = {
+                type: 'updatePins',
+                pins: []
+            }
             pinUpdateQueue.forEach(pinUpdate => {
-                if (pinUpdate.pinType ==='continuous') {
-                    const {pinId, pinTime, pinValue, functionString} = pinUpdate;
-                    pushCommand(() => {
-                        const project = getProject();
-                        const signalId = Object.keys(project.signalData).find(signalId => project.signalData[signalId]?.pinIds.includes(pinId));
-                        if (!signalId) throw new Error("Pin not found");
-                        const signalType = (project.signalData[signalId] as Signal).type;
-                        if (signalType === 'discrete') throw new Error("Cannot update continuous pin of discrete signal");
-                        const pinTimes = (project.signalData[signalId] as Signal).pinTimes;
-                        const pinValues = (project.signalData[signalId] as Signal).pinValues;
-                        const curves = (project.signalData[signalId] as ContinuousSignal).curves;
-                        const newPinValue = pinValue ?? pinValues[pinId] as number;
-                        const newPinTime = pinTime ?? pinTimes[pinId] as number;
-                        const newFunctionString = functionString ?? curves[pinId] as string;
-                        return {
-                        type: 'addNextState',
-                        forward: [
-                            {
-                                type: 'updatePinValue',
-                                pinId,
-                                pinValue: newPinValue
-                            },
-                            {
-                                type: 'updatePinTime',
-                                pinId,
-                                pinTime: newPinTime
-                            },
-                            {
-                                type: 'updateCurve',
-                                pinId,
-                                functionString: newFunctionString
-                            }
-                        ],
-                        backward: [
-                            {
-                                type: 'updatePinValue',
-                                pinId,
-                                pinValue: pinValues[pinId] as number
-                            },
-                            {
-                                type: 'updatePinTime',
-                                pinId,
-                                pinTime: pinTimes[pinId] as number
-                            },
-                            {
-                                type: 'updateCurve',
-                                pinId,
-                                functionString: curves[pinId] as string
-                            }
-                        ]
-                    }})
+                const pinId = pinUpdate.pinId;
+                const signalId = project.orgData.signalIdByPinId[pinId];
+                let proposedPinTime = pinUpdate.pinTime;
+                let proposedPinValue = pinUpdate.pinValue;
+                let proposedFunctionString = pinUpdate.pinType === 'continuous' ? pinUpdate.functionString : undefined;
+                const existingPinTime = (project.signalData[signalId] as Signal).pinTimes[pinId] as number; 
+                const existingPinValue = (project.signalData[signalId] as Signal).pinValues[pinId] as number | string;
+                const existingFunctionString = pinUpdate.pinType === "continuous" ? (project.signalData[signalId] as ContinuousSignal).curves[pinId] as string | undefined : undefined;
+                const forwardUpdate = {
+                    pinId,
+                    pinTime: proposedPinTime ?? existingPinTime,
+                    pinValue: proposedPinValue ?? existingPinValue,
+                    functionString: proposedFunctionString ?? existingFunctionString,
                 }
-                if (pinUpdate.pinType === 'discrete') {
-                    const {pinId, pinTime, pinValue} = pinUpdate;
-                    pushCommand(() => {
-                        const project = getProject();
-                        const signalId = Object.keys(project.signalData).find(signalId => project.signalData[signalId]?.pinIds.includes(pinId));
-                        if (!signalId) throw new Error("Pin not found");
-                        const signalType = (project.signalData[signalId] as Signal).type;
-                        if (signalType === 'continuous') throw new Error("Cannot update discrete pin of continuous signal");
-                        const pinTimes = (project.signalData[signalId] as Signal).pinTimes;
-                        const pinValues = (project.signalData[signalId] as Signal).pinValues;
-                        const newPinValue = pinValue ?? pinValues[pinId] as string;
-                        const newPinTime = pinTime ?? pinTimes[pinId] as number;
-                        return {
-                        type: 'addNextState',
-                        forward: [
-                            {
-                                type: 'updatePinValue',
-                                pinId,
-                                pinValue: newPinValue
-                            },
-                            {
-                                type: 'updatePinTime',
-                                pinId,
-                                pinTime: newPinTime
-                            }
-                        ],
-                        backward: [
-                            {
-                                type: 'updatePinValue',
-                                pinId,
-                                pinValue: pinValues[pinId] as string
-                            },
-                            {
-                                type: 'updatePinTime',
-                                pinId,
-                                pinTime: pinTimes[pinId] as number
-                            }
-                        ]
-                    }})
+                const backwardUpdate = {
+                    pinId,
+                    pinTime: existingPinTime,
+                    pinValue: existingPinValue,
+                    functionString: existingFunctionString
                 }
+                forwardUpdates.pins.push(forwardUpdate);
+                backwardUpdates.pins.push(backwardUpdate);
             });
+            pushCommand(() => {
+                return {
+                type: 'addNextState',
+                forward: [forwardUpdates],
+                backward: [backwardUpdates]
+            }})
             if (commit) {pushCommit()}
             pushUpdate()
         },

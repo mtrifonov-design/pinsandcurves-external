@@ -1,6 +1,10 @@
 
 interface OrgData {
     signalIds: string[];
+    pinIds: string[];
+    signalIdByPinId: {
+        [key: string]: string;
+    };
     signalNames: {
         [key: string]: string;
     };

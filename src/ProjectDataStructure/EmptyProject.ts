@@ -7,6 +7,8 @@ const getEmptyProject : () => PinsAndCurvesProject = () => ({
     },
     orgData: {
         signalIds: [],
+        signalIdByPinId: {},
+        pinIds: [],
         signalNames: {},
         signalTypes: {},
         activeSignalIds: []

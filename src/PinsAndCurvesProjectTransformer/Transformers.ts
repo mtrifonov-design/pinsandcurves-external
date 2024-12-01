@@ -43,10 +43,13 @@ function addPin(draft: Project, instruction: InstructionTypes['addPin']) {
     signal.pinTimes[pinId] = pinTime;
     signal.pinValues[pinId] = pinValue;
     if (signalType === 'continuous') signal.curves[pinId] = functionString;
+    draft.orgData.pinIds.push(pinId);
+    draft.orgData.signalIdByPinId[pinId] = signalId;
 }
 
 function deletePin(draft: Project, instruction: InstructionTypes['deletePin']) {
     const { pinId } = instruction;
+    // console.log(pinId);
     let found = false;
     for (const signalId in draft.signalData) {
         const signal = draft.signalData[signalId] as ContinuousSignal | DiscreteSignal;
@@ -61,6 +64,8 @@ function deletePin(draft: Project, instruction: InstructionTypes['deletePin']) {
         }
     }
     if (!found) throw new Error(`Pin with id ${pinId} not found`);
+    draft.orgData.pinIds = draft.orgData.pinIds.filter(id => id !== pinId);
+    delete draft.orgData.signalIdByPinId[pinId];
 }
 
 function updatePinTime(draft: Project, instruction: InstructionTypes['updatePinTime']) {
@@ -83,7 +88,25 @@ function updatePinTime(draft: Project, instruction: InstructionTypes['updatePinT
     if (!found) throw new Error(`Pin with id ${pinId} not found`);
 }
 
-function updatePins(draft: Project, instruction: InstructionTypes['updatePins']) {}
+function updatePins(draft: Project, instruction: InstructionTypes['updatePins']) {
+    const { pins } = instruction;
+    for (const pin of pins) {
+        const { pinId, pinTime, pinValue, functionString } = pin;
+        const signalId = draft.orgData.signalIdByPinId[pinId];
+        if (!signalId) throw new Error(`Pin with id ${pinId} not found`);
+        const signal = draft.signalData[signalId] as ContinuousSignal | DiscreteSignal;
+        if (signal.type === 'continuous' && typeof pinValue !== 'number') throw new Error(`Pin value must be a number for continuous signals`);
+        if (signal.type === 'discrete' && typeof pinValue !== 'string') throw new Error(`Pin value must be a string for discrete signals`);
+        if (signal.type === 'continuous') {
+            const [min, max] = signal.range;
+            if (pinValue as number < min || pinValue as number > max) throw new Error(`Pin value must be between ${min} and ${max}`);
+            if (!functionString) throw new Error(`Curve is required for continuous signals`);
+        }
+        signal.pinTimes[pinId] = pinTime;
+        signal.pinValues[pinId] = pinValue;
+        if (signal.type === 'continuous') signal.curves[pinId] = functionString;
+    }
+}
 
 
 
@@ -253,4 +276,5 @@ export {
     updateNumberOfFrames,
     updateProjectName,
     generateId,
+    updatePins,
 }

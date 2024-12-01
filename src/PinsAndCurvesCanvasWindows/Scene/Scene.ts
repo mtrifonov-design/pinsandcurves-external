@@ -3,12 +3,15 @@ import Camera from "../Camera";
 
 import modeMenu, { ModeManager, Mode } from "./UIElements/modeMenu";
 
+const workingCanvasDimensions = [10000,10000];
 
 class Frame extends CanvasWindow {
-
     layer = 100;
     getBox() {
-        return new Box([this.context.dimensions.width,this.context.dimensions.height],this.context.dimensions.width,this.context.dimensions.height);
+        const [x,y] = this.context.workingCanvasDimensions;
+        const { width, height } = this.context.dimensions;
+        return new Box([x/2-width/2,y/2-height/2],width,height);
+        // return new Box([this.context.work,this.context.dimensions.height],this.context.dimensions.width,this.context.dimensions.height);
     }
     getChildren() {
         return this.props.objects;
@@ -38,6 +41,7 @@ class Scene extends CanvasWindow {
             this.setContext('project', project);
         });
 
+        this.setContext('workingCanvasDimensions', workingCanvasDimensions);
         this.props.modeManager.subscribeToModeUpdates((mode : Mode) => {
             this.setContext('mode', mode);
         })
@@ -53,7 +57,6 @@ class Scene extends CanvasWindow {
         w.push(Frame.Node({objects:this.props.objects}));
         return w;
     }
-
 
 }
 
