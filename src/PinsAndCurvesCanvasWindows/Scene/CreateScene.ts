@@ -1,6 +1,5 @@
 import { CanvasWindow, Controller, ProjectBuilder, PostMessageAPI, Box, RenderProps, CanvasRoot } from "../Dependencies";
 import FullscreenCanvas from "../FullscreenCanvas";
-import Camera from "../Camera";
 import resetButton_ from "./UIElements/resetButton";
 import loadInterface_ from "./UIElements/loadInterface";
 import saveInterface_ from "./UIElements/saveInterface";
@@ -9,6 +8,7 @@ import uiIsland_ from "./UIElements/uiIsland";
 import renderButton_ from "./UIElements/renderButton";
 import Scene from "./Scene";
 import { throttle } from "lodash";
+import RenderCanvas from "../RenderCanvas";
 
 function getController(dispatch: any, config: SceneConfig) {
     // check if project in local storage
@@ -38,18 +38,16 @@ function getDispatch() {
 
 
 const _default_config = {
-    canvasWidth: 800,
-    canvasHeight: 600,
     framesPerSecond: 30,
     numberOfFrames: 250,
 }
 
 interface SceneConfig {
-    canvasWidth: number;
-    canvasHeight: number;
     framesPerSecond: number;
     numberOfFrames: number;
 }
+
+let initialized = false;
 function CreateScene(objects: ((parent: CanvasWindow | CanvasRoot) => CanvasWindow)[], config:Partial<SceneConfig> = {}) {
 
     const {canvas,subscribeToCanvasResize} = FullscreenCanvas();
@@ -57,16 +55,12 @@ function CreateScene(objects: ((parent: CanvasWindow | CanvasRoot) => CanvasWin
     const loadInterface = loadInterface_();
     const saveInterface = saveInterface_();
 
-
+    const renderCanvas = RenderCanvas();
 
     const dispatch = getDispatch();
     const controller = getController(dispatch, { ..._default_config, ...config });
-    const renderButton = renderButton_(canvas,controller.projectTools,controller.getProject());
     const {modeMenu,modeManager} = modeMenu_();
-    const uiIsland = uiIsland_([resetButton,loadInterface,saveInterface,renderButton,modeMenu]);
-    document.body.appendChild(uiIsland);
     document.body.appendChild(canvas);
-
     const receive = controller.receive.bind(controller);
     const subscribe = PostMessageAPI.subscribeToProjectEvents('http://localhost:6006');
     subscribe((e: any) => {
@@ -80,11 +74,45 @@ function CreateScene(objects: ((parent: CanvasWindow | CanvasRoot) => CanvasWin
         controller, 
         modeManager, 
         subscribeToCanvasResize,
-        dimensions: {width: config.canvasWidth || _default_config.canvasWidth, height: config.canvasHeight || _default_config.canvasHeight},
         objects,
     });
 
     const root = new CanvasRoot(scene, canvas);
+    const renderButton = renderButton_(root,renderCanvas,controller.projectTools,controller.getProject());
+
+    modeManager.subscribeToModeUpdates((mode) => {
+        if (!initialized) return;
+        if (mode === 'view') {
+            canvas.style.display = 'none';
+            renderCanvas.style.display = 'block';
+
+            // disable primary camera
+            root.windows.forEach((w : any) => {
+                w._isPrimaryCamera = false;
+            });
+            const sceneCamera = root.windows.find((w : any) => w.isSceneCamera !== undefined) as any;
+            if (!sceneCamera) throw new Error("Could not find scene camera");
+            sceneCamera.setAsPrimaryCamera();
+            renderCanvas.width = sceneCamera.width;
+            renderCanvas.height = sceneCamera.height;
+            root.canvas = renderCanvas;
+        } else {
+            // disable primary camera
+            root.windows.forEach((w : any) => {
+                w._isPrimaryCamera = false;
+            });
+            const interactiveCamera = root.windows.find((w : any) => w.isInteractiveCamera !== undefined);
+            if (!interactiveCamera) throw new Error("Could not find interactive camera");
+            interactiveCamera.setAsPrimaryCamera();
+
+            canvas.style.display = 'block';
+            renderCanvas.style.display = 'none';
+            root.canvas = canvas;
+        }
+    });
+
+    const uiIsland = uiIsland_([resetButton,loadInterface,saveInterface,renderButton,modeMenu]);
+    document.body.appendChild(uiIsland);
 
     (window as any).canvasRoot = root;
     (window as any).controller = controller;
@@ -128,6 +156,7 @@ function CreateScene(objects: ((parent: CanvasWindow | CanvasRoot) => CanvasWin
     }
 
     f();
+    initialized = true;
 }
 
 export type { SceneConfig };

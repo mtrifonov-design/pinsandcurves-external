@@ -44,7 +44,11 @@ function generateRandomKey() {
 }
 
 
-abstract class CanvasWindow extends Box {
+abstract class CanvasWindow<
+    Props extends {} = {[key:string]:any },
+    Context extends {} = { [key: string]:any },
+    State = any
+    > extends Box {
 
     layer: number = 0;
     _root: CanvasRoot | undefined;
@@ -79,8 +83,8 @@ abstract class CanvasWindow extends Box {
     //     this.externalState = externalState;
     //     this.onExternalStateUpdate(externalState)
     // };
-    state: any;
-    setState(s: any) {
+    state: State = undefined as State;
+    setState(s: State) {
         if (this.state === s) throw new Error('Cannot set state to previous state. ');
         if (this.windowDidMountPrimitiveIsRunning) {
             // console.log('setting state',s);
@@ -92,8 +96,8 @@ abstract class CanvasWindow extends Box {
     }
 
     // context
-    context: { [key: string]: any } = {};
-    setContext(key: string, value: any) {
+    context: Context = {} as Context;
+    setContext<K extends keyof Context>(key: K, value: Context[K]) {
         if (this.windowDidMountPrimitiveIsRunning) {
             this.context[key] = value;
             return;
@@ -107,14 +111,14 @@ abstract class CanvasWindow extends Box {
 
     // lifecycle methods
     windowDidMountPrimitiveIsRunning = false;
-    windowDidMountPrimitive(props: { [key: string] : any}) {
+    windowDidMountPrimitive(props: Props) {
         this.windowDidMountPrimitiveIsRunning = true;
         this.windowDidMount(props);
         this.windowDidMountPrimitiveIsRunning = false;
     }
 
-    windowDidMount(props: { [key: string] : any}) {};
-    windowDidUpdate(props: { [key: string] : any}) {};
+    windowDidMount(props: Props) {};
+    windowDidUpdate(props: Props) {};
     cameraDidUpdate() {};
     windowWillUnmount() {};
 
@@ -173,7 +177,7 @@ abstract class CanvasWindow extends Box {
         this.children.forEach(c => c.updateSelf());
     }
 
-    getChildren(props?: { [key: string] : any}) : ((parent: CanvasWindow) => CanvasWindow)[] {
+    getChildren(props?: Props) : ((parent: CanvasWindow) => CanvasWindow)[] {
         return [];
     }
 
@@ -184,25 +188,28 @@ abstract class CanvasWindow extends Box {
 
 
     isCanvasRoot = false;
-    static Node(props?: { [key: string]: any }) : (parent: CanvasWindow | CanvasRoot) => CanvasWindow {
+    static Node<P extends {}>
+        (props?: P) 
+        : (parent: CanvasWindow | CanvasRoot) => CanvasWindow {
         const constructorName = this.name;
         return (parent: CanvasWindow | CanvasRoot) => {
             if (parent.isCanvasRoot) {
                 parent = parent as CanvasRoot;
-                if (!props) props = {};
+                // if (!props) props = {} as P;
+                // let newProps = props ? { ...props } : {};
                 const key = "root";
                 let node: CanvasWindow;
                 node = new (this as any)() as CanvasWindow;
                 node._root = parent;
                 node.setKey(key);
-                node.props = { ...props };
+                node.props = props ? props : {};
                 node.context = { ...node.context};
                 // node.externalState = parent.externalState;
                 return node;
             } else {
                 const indexAmongstParentChildren = parent.childIndex;
-                if (!props) props = {};
-                const key = props.key ? props.key : `${constructorName}[${indexAmongstParentChildren}]`;
+                if (!props) props = {} as P;
+                const key = (props as any).key ? (props as any).key : `${constructorName}[${indexAmongstParentChildren}]`;
                 const keyExists = parent.children.findIndex(c => c.key === key) !== -1;
                 let node: CanvasWindow;
                 // let didMount = false;
@@ -227,8 +234,7 @@ abstract class CanvasWindow extends Box {
     }
 
     // props
-    props: { [key: string]: any } = {};
-
+    props: Props = {} as Props;
 
     constructor() {
         super();
@@ -475,5 +481,10 @@ abstract class CanvasWindow extends Box {
     }
 }
 
-export type { HandlerProps, RenderProps, MouseHandlerProps, WheelHandlerProps };
+type CanvasNode<P> = (props: P) => CanvasWindow;
+
+export type { HandlerProps, RenderProps, MouseHandlerProps, WheelHandlerProps, CanvasNode };
+
+
+
 export { CanvasWindow };

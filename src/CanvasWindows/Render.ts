@@ -5,8 +5,10 @@ import { boxesIntersect } from "./Utils";
 
 function render(camera: Box, windows: CanvasWindow[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
     // Check which windows intersect with the camera
+    // console.log(camera)
     camera = new Box([...camera.o],camera.w,camera.h);
     const cameraBoundingBox = camera.getBoundingBox();
+    // console.log(cameraBoundingBox)
     const intersectingWindows = windows.filter(w => {return boxesIntersect(w.getBoundingBox() as BoundingBox, cameraBoundingBox as BoundingBox)});
     // console.log(intersectingWindows)
     intersectingWindows.sort((a, b) => a.getLayer() - b.getLayer());

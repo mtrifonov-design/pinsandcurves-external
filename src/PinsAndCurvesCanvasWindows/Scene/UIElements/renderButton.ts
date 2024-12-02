@@ -1,6 +1,6 @@
 
 import { Project, ProjectTools } from '../../../PinsAndCurvesProjectController';
-
+import { CanvasRoot } from '../../Dependencies';
 
 async function recordCanvas(canvas : HTMLCanvasElement, frames: number, width : number, height: number, fps:number, goToFrame: (frameIndex: number) => void) {
     const stream = canvas.captureStream(fps); // Capture canvas as a video stream
@@ -41,23 +41,13 @@ async function recordCanvas(canvas : HTMLCanvasElement, frames: number, width : 
 async function createVideo(canvas: HTMLCanvasElement, projectTools: ProjectTools,project: Project) {
     const frameRate = project.timelineData.framesPerSecond;
     const frameCount = project.timelineData.numberOfFrames;
-
-    // Custom render logic
-    async function renderFrame(canvas : HTMLCanvasElement, frameIndex : number) {
-        projectTools.updatePlayheadPosition(frameIndex,false);
-        await new Promise<void>((resolve) => {
-            requestAnimationFrame(() => {
-                resolve();
-            });
-        });
-    }
     recordCanvas(canvas, frameCount, canvas.width, canvas.height, frameRate, (frameIndex) => {
         projectTools.updatePlayheadPosition(frameIndex,false);
     });
 }
 
 
-function renderButton(canvas: HTMLCanvasElement, projectTools: ProjectTools,project: Project) {
+function renderButton(root: CanvasRoot, canvas: HTMLCanvasElement, projectTools: ProjectTools,project: Project) {
     const button = document.createElement('button');
     button.innerHTML = 'Render';
     button.id = 'render';

@@ -1,6 +1,5 @@
 import { CanvasWindow, Controller, ProjectBuilder, PostMessageAPI, Box, RenderProps } from "../Dependencies";
-import Camera from "../Camera";
-
+import InteractiveCamera from "../InteractiveCamera";
 import modeMenu, { ModeManager, Mode } from "./UIElements/modeMenu";
 
 const workingCanvasDimensions = [10000,10000];
@@ -9,24 +8,43 @@ class Frame extends CanvasWindow {
     layer = 100;
     getBox() {
         const [x,y] = this.context.workingCanvasDimensions;
-        const { width, height } = this.context.dimensions;
-        return new Box([x/2-width/2,y/2-height/2],width,height);
-        // return new Box([this.context.work,this.context.dimensions.height],this.context.dimensions.width,this.context.dimensions.height);
+        return new Box([x/2,y/2],0,0);    
     }
     getChildren() {
         return this.props.objects;
     }
 
     render(r: RenderProps) {
-        // console.log('me',this.w,this.h,this.o);
-        this.strokeOutline(r, 'white');
+        // console.log("rendering frame")
+        
+        // draw little crosshair in the middle of the screen
+        const ctx = r.ctx;
+        const [ox,oy] = r.absoluteO;
+        const lineLength = 13;
+
+        // console.log("rendering",ox,oy)
+        
+        const points = [
+            [ox,oy+lineLength], // top
+            [ox,oy-lineLength], // bottom
+            [ox+lineLength,oy], // right
+            [ox-lineLength,oy], // left
+        ]
+
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(points[0][0],points[0][1]);
+        ctx.lineTo(points[1][0],points[1][1]);
+        ctx.moveTo(points[2][0],points[2][1]);
+        ctx.lineTo(points[3][0],points[3][1]);
+        ctx.stroke();
     }
 }
 
 interface SceneProps {
     controller: Controller;
     modeManager: ModeManager;
-    dimensions: {width: number, height: number};
     objects: ((parent: CanvasWindow) => CanvasWindow)[];
 }
 
@@ -48,12 +66,11 @@ class Scene extends CanvasWindow {
         this.setContext('setMode', (mode: Mode) => {
             this.props.modeManager.setMode(mode);
         });
-        this.setContext('dimensions', this.props.dimensions);
     }
 
     getChildren(props: SceneProps) {
         const w = [];
-        w.push(Camera.Node({subscribeToCanvasResize: this.props.subscribeToCanvasResize}));
+        w.push(InteractiveCamera.Node({subscribeToCanvasResize: this.props.subscribeToCanvasResize}));
         w.push(Frame.Node({objects:this.props.objects}));
         return w;
     }

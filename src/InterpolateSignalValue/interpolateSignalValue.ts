@@ -31,7 +31,7 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
     const signal = signalData[signalId] as ContinuousSignal;
     const [min,max] = signal.range;
     const sortedPinTimes = Object.entries(signal.pinTimes).sort((a,b) => a[1] as number - (b[1] as number));
-    const nextPin = sortedPinTimes.find(([pinId, pinTime]) => pinTime as number > frame);
+    const nextPin = sortedPinTimes.find(([pinId, pinTime]) => pinTime as number >= frame);
     if (nextPin === undefined) {
         return [min,[]];
     }
@@ -156,7 +156,7 @@ const interpolateDiscreteSignalValue = (project: Project, signalId : string, fra
     const signalData = project.signalData;
     const signal = signalData[signalId] as DiscreteSignal;
     const sortedPinTimes = Object.entries(signal.pinTimes).sort((a,b) => a[1] as number - (b[1] as number));
-    const nextPin = sortedPinTimes.find(([pinId, pinTime]) => pinTime as number > frame);
+    const nextPin = sortedPinTimes.find(([pinId, pinTime]) => pinTime as number >= frame);
     if (nextPin === undefined) {
         return "END VALUE";
     }

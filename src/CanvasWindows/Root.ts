@@ -90,7 +90,8 @@ class CanvasRoot {
 
     get cameraSnapshot() {
         if (!this.cameraNode) return new Box([0,0],this.canvas.width,this.canvas.height);
-        return this.cameraNode.getBoxPrimitive().clone();
+        return new Box(this.cameraNode.globalO,this.cameraNode.w,this.cameraNode.h);
+        // return this.cameraNode.getBoxPrimitive().clone();
     }
 
     cameraNode: CanvasWindow | undefined = undefined;
@@ -103,7 +104,7 @@ class CanvasRoot {
 
 
     scheduledStateUpdates: [string,() => void][] = [];
-    scheduleStateUpdate(node: CanvasWindow, newState: any) {
+    scheduleStateUpdate(node: CanvasWindow<any,any,any>, newState: any) {
         const stateUpdateCallback = () => {
             node.state = newState;
         }
@@ -112,7 +113,7 @@ class CanvasRoot {
 
     }
 
-    scheduleContextUpdate(node: CanvasWindow, contextKey: string, newContext: any) {
+    scheduleContextUpdate(node: CanvasWindow<any,any,any>, contextKey: any, newContext: any) {
         const contextUpdateCallback = () => {
             node.context[contextKey] = newContext;
         }
@@ -222,8 +223,6 @@ class CanvasRoot {
             this.windows.forEach(w => w.cameraDidUpdate());
         }
     }
-
-
 
     render() {
         const ctx = this.canvas.getContext('2d');

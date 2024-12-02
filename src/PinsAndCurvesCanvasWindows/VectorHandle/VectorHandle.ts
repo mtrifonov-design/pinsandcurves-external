@@ -10,12 +10,9 @@ function clamp(x: number, min: number, max: number) {
 
 class Crosshair extends SignalWindow {
 
-    // windowDidMount(props: { [key: string]: any; }): void {
-    //     console.log('mounted',this.props);
-    // }
-
     getBox() {
-        return new Box(this.props.o,side,side);
+        const [cux,cuy] = this.canvasUnit;
+        return new Box(this.props.o,side * cux,side * cuy);
     }
 
     render(r: RenderProps): void {
@@ -76,7 +73,10 @@ class VectorHandleBox extends SignalWindow {
         //     this.setContinuousSignalValue(id,value as number,commit,range);
         // }
         const type = this.props.topProps.type;
-        const { angle, magnitude, vector, range,rangeX, rangeY } = value;
+        let { angle, magnitude, vector, range,rangeX, rangeY } = value;
+        angle = angle ? Number(angle.toFixed(2)) : angle;
+        magnitude = magnitude ? Number(magnitude.toFixed(2)) : magnitude;
+        vector = vector ? vector.map((v: number) => Number(v.toFixed(2))) : vector;
 
         switch (this.props.topProps.degreesOfFreedom) {
             case "1-angular":
@@ -108,6 +108,8 @@ class VectorHandleBox extends SignalWindow {
                 }
                 break;
         }
+
+        
 
 
     }
@@ -179,7 +181,9 @@ class VectorHandleBox extends SignalWindow {
         }
     }
 
-    render() {}
+    render(r: RenderProps) {
+        // this.strokeOutline(r,'blue')
+    }
 }
 
 class OnionSkin extends SignalWindow {
@@ -189,8 +193,8 @@ class OnionSkin extends SignalWindow {
         const [cux,cuy] = this.canvasUnit;
         const displacement = [(side/2) * cux,(side/2) * cuy] as Vec2;
         return [
-            Crosshair.Node({o: subtract(v1 as Vec2,displacement), alpha: 0.5, anchor: this.props.anchor}),
-            Crosshair.Node({o: subtract(v2 as Vec2,displacement), alpha: 0.5, anchor: this.props.anchor}),
+            Crosshair.Node({o: subtract(v1 as Vec2,displacement), alpha: 0.5, color: "#d0e681", anchor: this.props.anchor}),
+            Crosshair.Node({o: subtract(v2 as Vec2,displacement), alpha: 0.5, color: "#77d4cd", anchor: this.props.anchor}),
         ];
     }
 
@@ -237,35 +241,67 @@ class OnionSkin extends SignalWindow {
             vector: nextVector,
         } = nextPinValue;
 
-        let x1, y1, x2, y2;
+        let previous : Vec2, next : Vec2;
         switch (this.props.topProps.degreesOfFreedom) {
             case "1-angular":
                 {
-                    const [ox,oy] = this.props.anchor;
-                    [x1,y1] = [ox + Math.cos(previousAngle),oy + Math.sin(previousAngle)];
-                    [x2,y2] = [ox + Math.cos(nextAngle),oy + Math.sin(nextAngle)];
+                    if (!this.props.topProps.initialLength) throw new Error("Initial length not defined for 1-angular handle");
+                    const l = this.props.initialLength;
+                    previous = [l*Math.cos(previousAngle),l*Math.sin(previousAngle)];
+                    next = [l*Math.cos(nextAngle),l*Math.sin(nextAngle)];
                     break;
                 }
             case "1-normal":
                 {
-                    const [ox,oy] = this.props.anchor;
-                    const [dx,dy] = this.props.topProps.initialDirection;
-                    [x1,y1] = [ox + dx * previousMag,oy + dy * previousMag];
-                    [x2,y2] = [ox + dx * nextMag,oy + dy * nextMag];
+                    if (!this.props.topProps.initialDirection) throw new Error("Initial direction not defined for 1-normal handle");
+                    const [dx,dy] = scale(this.props.topProps.initialDirection,1/norm(this.props.topProps.initialDirection));
+                    previous = scale([dx,dy],previousMag);
+                    next = scale([dx,dy],nextMag);
                     break;
                 }
             case "2-cartesian":
                 {
-                    const [ox,oy] = this.props.anchor;
-                    [x1,y1] = [ox + previousVector[0],oy + previousVector[1]];
-                    [x2,y2] = [ox + nextVector[0],oy + nextVector[1]];
+                    previous = previousVector;
+                    next = nextVector;
                     break;
                 }
             default:
                 throw new Error("Degrees of freedom not defined for VectorHandle");
         }
-        return [[x1,y1],[x2,y2]];
+        const difference = subtract(this.parentO,this.props.anchor);
+        previous = add(previous,difference);
+        next = add(next,difference);
+        return [previous,next];
     }
+
+    // getBox() {
+    //     let x : number;
+    //     let y : number;
+    //     //console.log(this.props);
+    //     switch (this.props.degreesOfFreedom) {
+    //         case "1-angular":
+    //                 const angle = this.retrieveSignalValue(this.props.id) as number;
+    //                 if (!this.props.initialLength) throw new Error("Initial length not defined for 1-angular handle");
+    //                 const l = this.props.initialLength;
+    //                 [x,y] = [l*Math.cos(angle),l*Math.sin(angle)];
+    //                 break;
+                
+    //         case "1-normal":
+    //                 const mag = this.retrieveSignalValue(this.props.id) as number;
+    //                 if (!this.props.initialDirection) throw new Error("Initial direction not defined for 1-normal handle");
+    //                 const [dx,dy] = scale(this.props.initialDirection,1/norm(this.props.initialDirection));
+    //                 [x,y] = [dx * mag,dy * mag];
+    //                 break;
+                
+    //         case "2-cartesian":
+    //                 [x,y] = this.retrieveSignalValue(this.props.id) as Vec2;
+    //                 break;
+    //         default:
+    //             throw new Error("Degrees of freedom not defined for VectorHandle");
+                
+    //     }
+    //     return new Box([x,y],0,0);
+    // }
 
 }
 
@@ -295,7 +331,9 @@ class VectorHandle extends SignalWindow {
 
     getChildren(props?: { [key: string]: any; } | undefined): ((parent: CanvasWindow) => CanvasWindow)[] {
         const children = this.props.children ? [...this.props.children] : [];
-        children.push(VectorHandleBox.Node({id: this.props.id, topProps: this.props, anchor: this.parentO}));
+        const nprops ={id: this.props.id, topProps: this.props, anchor: this.parentO}
+        const vectorHandleBox =VectorHandleBox.Node(nprops)
+        children.push(vectorHandleBox);
         if (this.props.onionSkin) children.push(OnionSkin.Node({id: this.props.id, topProps: this.props, anchor: this.parentO}));
         return children;
     }
@@ -421,8 +459,10 @@ interface CartesianVectorHandleProps {
     children?: (parent: CanvasWindow) => CanvasWindow;
     discrete?: boolean;
     displayLine?: boolean;
+    onionSkin?: boolean;
 }
 class CartesianVectorHandle extends CanvasWindow {
+
     getChildren(props: CartesianVectorHandleProps): ((parent: CanvasWindow) => CanvasWindow)[] {
         const w = [];
         w.push(VectorHandle.Node({id: props.id,
@@ -433,6 +473,7 @@ class CartesianVectorHandle extends CanvasWindow {
             range: props.range,
             children: props.children,
             displayLine: props.displayLine,
+            onionSkin: props.onionSkin,
         }));
         return w;
     }
@@ -444,6 +485,7 @@ interface AngularVectorHandleProps {
     discrete?: boolean;
     initialLength: number;
     displayCircle?: boolean;
+    onionSkin?: boolean;
 }
 
 class AngularVectorHandle extends CanvasWindow {
@@ -455,6 +497,7 @@ class AngularVectorHandle extends CanvasWindow {
             children: props.children,
             initialLength: props.initialLength,
             displayCircle: props.displayCircle,
+            onionSkin: props.onionSkin,
         }));
         return w;
     }
@@ -467,10 +510,33 @@ interface NormalVectorHandleProps {
     children?: (parent: CanvasWindow) => CanvasWindow;
     discrete?: boolean;
     displayLine?: boolean;
+    onionSkin?: boolean;
 }
 
-class NormalVectorHandle extends CanvasWindow {
-    getChildren(props: NormalVectorHandleProps): ((parent: CanvasWindow) => CanvasWindow)[] {
+
+// const NormalVectorHandle : FunctionCanvasWindow<NormalVectorHandleProps> = (props) => {
+//     const prototype = VectorHandle.prototype;
+//     const obj = Object.create(prototype);
+//     obj.getChildren = function() {
+//         const w = [];
+//         w.push(VectorHandle.Node({
+//             id: props.id,
+//             type: props.discrete ? "discrete" : "continuous",
+//             degreesOfFreedom: "1-normal",
+//             initialDirection: props.initialDirection,
+//             range: props.range,
+//             children: props.children,
+//             displayLine: props.displayLine,
+//             onionSkin: props.onionSkin,
+//         }));
+//         return w;
+//     }
+//     return obj.Node;
+// }
+
+class NormalVectorHandle extends CanvasWindow<NormalVectorHandleProps> {
+
+    getChildren(props :NormalVectorHandleProps): ((parent: CanvasWindow) => CanvasWindow)[] {
         const w = [];
         w.push(VectorHandle.Node({id: props.id,
             type: props.discrete ? "discrete" : "continuous",
@@ -479,6 +545,7 @@ class NormalVectorHandle extends CanvasWindow {
             range: props.range,
             children: props.children,
             displayLine: props.displayLine,
+            onionSkin: props.onionSkin,
         }));
         return w;
     }

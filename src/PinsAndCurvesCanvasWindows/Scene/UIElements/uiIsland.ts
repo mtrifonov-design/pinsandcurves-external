@@ -2,6 +2,9 @@
 
 function uiIsland(children: Element[]): Element {
     const island = document.createElement('div');
+    island.style.position = 'absolute';
+    island.style.top = '0';
+    island.style.left = '0';
     island.style.display = 'flex';
     island.style.flexDirection = 'row';
     island.style.justifyContent = 'center';
