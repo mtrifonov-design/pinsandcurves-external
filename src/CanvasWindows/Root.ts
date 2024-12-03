@@ -1,7 +1,7 @@
 import Box from "./Box";
 import { CanvasWindow } from "./CanvasWindow";
 import { render, mouseDownHandler, mouseMoveHandler, mouseUpHandler, mouseWheelHandler, clickHandler } from "./Render";
-
+import { orderBy } from "lodash";
 
 function generateId() {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -24,7 +24,7 @@ class CanvasRoot {
             const children = window.children;
             return [window, ...children.flatMap(getWindowsRecursive)];
         }
-        return getWindowsRecursive(this.rootNode);
+        return orderBy(getWindowsRecursive(this.rootNode), w => w.getLayer(), 'asc');
     }
 
 

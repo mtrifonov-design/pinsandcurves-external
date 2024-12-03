@@ -3,6 +3,12 @@ import { CanvasWindow } from "./Dependencies";
 
 const generateId = () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
+
+interface ExtendedRenderProps extends RenderProps {
+    useContinuousSignal: (signalName: string, range: [number,number], frame?: number) => number;
+    useDiscreteSignal: (signalName: string, frame?: number) => string;
+}
+
 class SignalWindow extends CanvasWindow {
 
     evaluateSignal(signalId: string, frame: number) {
@@ -65,12 +71,19 @@ class SignalWindow extends CanvasWindow {
         return this.useSignal(signalId,'discrete',undefined,frame) as string;
     }
     render(r: RenderProps): void {
-        if (this.context.mode === 'edit') {
+        if (this.context.mode === 'edit' || this.context.mode === 'record') {
             this.strokeOutline(r,'green')
         }
-        this.draw(r);
+        const extendedRenderProps = {
+            ...r,
+            useContinuousSignal: this.useContinuousSignal.bind(this),
+            useDiscreteSignal: this.useDiscreteSignal.bind(this),
+        }
+
+        this.draw(extendedRenderProps);
     }
-    draw(r: RenderProps): void {}
+    draw(r: ExtendedRenderProps): void {}
 }
 
+export type { ExtendedRenderProps };
 export default SignalWindow;

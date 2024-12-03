@@ -23,7 +23,7 @@ const cachedFunctions : {
     } | undefined
 } = {};
 
-
+const TOLERANCE = 1e-6;
 
 const interpolateContinuousSignalValue = (project: Project, signalId : string, frame : number, iterationCount : number) : InterpolateSignalReturnType => {
 
@@ -81,7 +81,8 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
         interpolationFunction = cachedFunction.cachedFunction;
     }
 
-    const relativeTime = (frame - previousPinTime) / (nextPinTime - previousPinTime);
+    const timeDelta = nextPinTime !== previousPinTime ? nextPinTime - previousPinTime : 1;
+    const relativeTime = (frame - previousPinTime) / timeDelta;
 
     let value = min;
     let errorLog = [];
@@ -131,23 +132,28 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
     }
     if (value < min) {
         value = min;
-        errorLog.push(
-            {
-                signalId,
-                frame,
-                error: "Interpolated value below minimum",
-            }
-        )
+        if (Math.abs(value - min) > TOLERANCE) {
+            errorLog.push(
+                {
+                    signalId,
+                    frame,
+                    error: "Interpolated value below minimum",
+                }
+            )
+        }
     }
     if (value > max) {
+        const errorValue = value;
         value = max;
-        errorLog.push(
-            {
-                signalId,
-                frame,
-                error: "Interpolated value above maximum",
-            }
-        )
+        if (Math.abs(errorValue - max) > TOLERANCE) {
+            errorLog.push(
+                {
+                    signalId,
+                    frame,
+                    error: "Interpolated value above maximum: " + errorValue,
+                }
+            )
+        }
     }
     return [value,errorLog];
 };

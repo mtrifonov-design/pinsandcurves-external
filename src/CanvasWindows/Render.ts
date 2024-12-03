@@ -8,20 +8,26 @@ function render(camera: Box, windows: CanvasWindow[], canvas: HTMLCanvasElement,
     // console.log(camera)
     camera = new Box([...camera.o],camera.w,camera.h);
     const cameraBoundingBox = camera.getBoundingBox();
-    // console.log(cameraBoundingBox)
     const intersectingWindows = windows.filter(w => {return boxesIntersect(w.getBoundingBox() as BoundingBox, cameraBoundingBox as BoundingBox)});
     // console.log(intersectingWindows)
-    intersectingWindows.sort((a, b) => a.getLayer() - b.getLayer());
-    for (let w of intersectingWindows) {
-        w.renderPrimitive(ctx);
+    // intersectingWindows.sort((a, b) => a.getLayer() - b.getLayer());
+
+    const layers = Array.from(new Set(intersectingWindows.map(w => w.getLayer()))).sort((a, b) => a - b);
+    for (let i = 0; i < layers.length; i++) {
+        const layer = intersectingWindows.filter(w => w.getLayer() === layers[i]);
+        ctx.save();
+        for (let w of layer) {
+            w.renderPrimitive(ctx);
+        }
+        ctx.restore();
     }
 }
 
 function clickHandler(camera: Box, windows: CanvasWindow[], canvas: HTMLCanvasElement, mousePos: [number, number], e: MouseEvent) {
     camera = new Box([...camera.o],camera.w,camera.h);
     const cameraBoundingBox = camera.getBoundingBox();
-    const intersectingWindows = windows.filter(w => {return boxesIntersect(w.getBoundingBox() as BoundingBox, cameraBoundingBox as BoundingBox)});
-    intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
+    const intersectingWindows = windows.filter(w => {return boxesIntersect(w.getBoundingBox() as BoundingBox, cameraBoundingBox as BoundingBox)}).reverse();
+    // intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
     let running = true;
     const terminateEvent = () => {running = false;}
     for (let w of intersectingWindows) {
@@ -34,8 +40,8 @@ function mouseDownHandler(camera: Box, windows: CanvasWindow[],canvas: HTMLCanva
     // console.log(windows)
     camera = new Box([...camera.o],camera.w,camera.h);
     const cameraBoundingBox = camera.getBoundingBox();
-    const intersectingWindows = windows.filter(w => {return boxesIntersect(w.getBoundingBox() as BoundingBox, cameraBoundingBox as BoundingBox)});
-    intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
+    const intersectingWindows = windows.filter(w => {return boxesIntersect(w.getBoundingBox() as BoundingBox, cameraBoundingBox as BoundingBox)}).reverse();
+    // intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
     let running = true;
     // console.log(intersectingWindows)
     const terminateEvent = () => {running = false;}
@@ -48,8 +54,8 @@ function mouseDownHandler(camera: Box, windows: CanvasWindow[],canvas: HTMLCanva
 function mouseMoveHandler(camera: Box, windows: CanvasWindow[],canvas: HTMLCanvasElement, mousePos: [number, number], e: MouseEvent) {
     camera = new Box([...camera.o],camera.w,camera.h);
     const cameraBoundingBox = camera.getBoundingBox();
-    const intersectingWindows = windows.filter(w => {return boxesIntersect(w.getBoundingBox() as BoundingBox, cameraBoundingBox as BoundingBox)});
-    intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
+    const intersectingWindows = windows.filter(w => {return boxesIntersect(w.getBoundingBox() as BoundingBox, cameraBoundingBox as BoundingBox)}).reverse();
+    // intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
     let running = true;
     const terminateEvent = () => {running = false;}
     for (let w of intersectingWindows) {
@@ -61,8 +67,8 @@ function mouseMoveHandler(camera: Box, windows: CanvasWindow[],canvas: HTMLCanva
 function mouseUpHandler(camera: Box, windows: CanvasWindow[],canvas: HTMLCanvasElement, mousePos: [number, number], e: MouseEvent) {
     camera = new Box([...camera.o],camera.w,camera.h);
     const cameraBoundingBox = camera.getBoundingBox();
-    const intersectingWindows = windows.filter(w => {return boxesIntersect(w.getBoundingBox() as BoundingBox, cameraBoundingBox as BoundingBox)});
-    intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
+    const intersectingWindows = windows.filter(w => {return boxesIntersect(w.getBoundingBox() as BoundingBox, cameraBoundingBox as BoundingBox)}).reverse();
+    // intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
     let running = true;
     const terminateEvent = () => {running = false;}
     for (let w of intersectingWindows) {
@@ -74,8 +80,8 @@ function mouseUpHandler(camera: Box, windows: CanvasWindow[],canvas: HTMLCanvasE
 function mouseWheelHandler(camera: Box, windows: CanvasWindow[],canvas: HTMLCanvasElement, e: WheelEvent) {
     camera = new Box([...camera.o],camera.w,camera.h);
     const cameraBoundingBox = camera.getBoundingBox();
-    const intersectingWindows = windows.filter(w => {return boxesIntersect(w.getBoundingBox() as BoundingBox, cameraBoundingBox as BoundingBox)});
-    intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
+    const intersectingWindows = windows.filter(w => {return boxesIntersect(w.getBoundingBox() as BoundingBox, cameraBoundingBox as BoundingBox)}).reverse();
+    // intersectingWindows.sort((a, b) => b.getLayer() - a.getLayer());
     let running = true;
     const terminateEvent = () => {running = false;}
     for (let w of intersectingWindows) {

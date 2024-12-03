@@ -9,6 +9,7 @@ import renderButton_ from "./UIElements/renderButton";
 import Scene from "./Scene";
 import { throttle } from "lodash";
 import RenderCanvas from "../RenderCanvas";
+import { CanvasNode } from "../../CanvasWindows";
 
 function getController(dispatch: any, config: SceneConfig) {
     // check if project in local storage
@@ -48,7 +49,7 @@ interface SceneConfig {
 }
 
 let initialized = false;
-function CreateScene(objects: ((parent: CanvasWindow | CanvasRoot) => CanvasWindow)[], config:Partial<SceneConfig> = {}) {
+function CreateScene(config:Partial<SceneConfig> = {},...objects: CanvasNode[]) {
 
     const {canvas,subscribeToCanvasResize} = FullscreenCanvas();
     const resetButton = resetButton_();
@@ -93,8 +94,8 @@ function CreateScene(objects: ((parent: CanvasWindow | CanvasRoot) => CanvasWin
             const sceneCamera = root.windows.find((w : any) => w.isSceneCamera !== undefined) as any;
             if (!sceneCamera) throw new Error("Could not find scene camera");
             sceneCamera.setAsPrimaryCamera();
-            renderCanvas.width = sceneCamera.width;
-            renderCanvas.height = sceneCamera.height;
+            renderCanvas.width = sceneCamera.w;
+            renderCanvas.height = sceneCamera.h;
             root.canvas = renderCanvas;
         } else {
             // disable primary camera

@@ -1,8 +1,8 @@
-import { CanvasWindow, Controller, ProjectBuilder, PostMessageAPI, Box, RenderProps } from "../Dependencies";
+import { CanvasWindow, Controller, ProjectBuilder, PostMessageAPI, Box, RenderProps, Vec2 } from "../Dependencies";
 import InteractiveCamera from "../InteractiveCamera";
 import modeMenu, { ModeManager, Mode } from "./UIElements/modeMenu";
 
-const workingCanvasDimensions = [10000,10000];
+const workingCanvasDimensions : Vec2 = [10000,10000];
 
 class Frame extends CanvasWindow {
     layer = 100;

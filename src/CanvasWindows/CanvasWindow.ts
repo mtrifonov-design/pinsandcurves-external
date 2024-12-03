@@ -277,8 +277,9 @@ abstract class CanvasWindow<
         return super.pointInside(subtract(v, this.parentO));
     }
 
+    globalPositioning: boolean = false;
     get globalO() : Vec2 {
-        if (!this._parent) return this.o;
+        if (!this._parent || this.globalPositioning) return this.o;
         const [pgox,pgoy] = this._parent.globalO;
         const [ox,oy] = this.o;
         return [pgox + ox, pgoy + oy] as Vec2;
@@ -432,12 +433,12 @@ abstract class CanvasWindow<
     renderPrimitive(ctx: CanvasRenderingContext2D) {
         if (!this.render) return;
         const h = this.preparePostBoxHandlerProps();
-        ctx.save();
+        // ctx.save();
         this.render({
             ...h,
             ctx,
         });
-        ctx.restore();
+        // ctx.restore();
     }
     render(props: RenderProps) {};
     
@@ -481,7 +482,7 @@ abstract class CanvasWindow<
     }
 }
 
-type CanvasNode<P> = (props: P) => CanvasWindow;
+type CanvasNode = (parent: CanvasWindow | CanvasRoot) => CanvasWindow;
 
 export type { HandlerProps, RenderProps, MouseHandlerProps, WheelHandlerProps, CanvasNode };
 
