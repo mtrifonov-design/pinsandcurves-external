@@ -18,9 +18,14 @@ interface TimelineData {
     numberOfFrames: number;
     framesPerSecond: number;
     playheadPosition: number;
+    focusRange: [number, number];
 }
 
 type Curve = string;
+
+interface TemplateData {
+        [curveId: string]: Curve;
+}
 
 interface ContinuousSignal {
     id: string;
@@ -64,6 +69,7 @@ interface PinsAndCurvesProject {
     timelineData: TimelineData;
     orgData: OrgData;
     signalData: SignalData;
+    templateData: TemplateData;
 }
 
 export type { 

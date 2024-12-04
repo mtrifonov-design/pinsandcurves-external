@@ -33,6 +33,7 @@ class CanvasRoot {
             const lines = [];
             lines.push(`KEY: ${w.key}`);
             if (w._isPrimaryCamera) lines.push(`[[PRIMARY CAMERA]]`);
+            lines.push(`LAYER: ${w.getLayer()}`);
             lines.push(`BOX: [${w.o[0]}, ${w.o[1]}, ${w.w}, ${w.h}]`);
             lines.push(`GLOBAL O: [${w.globalO[0]}, ${w.globalO[1]}]`);
             lines.push(`CHILDREN:`);

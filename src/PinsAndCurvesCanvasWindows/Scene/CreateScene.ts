@@ -3,7 +3,7 @@ import FullscreenCanvas from "../FullscreenCanvas";
 import resetButton_ from "./UIElements/resetButton";
 import loadInterface_ from "./UIElements/loadInterface";
 import saveInterface_ from "./UIElements/saveInterface";
-import modeMenu_ from "./UIElements/modeMenu";
+import modeMenu_, { Mode } from "./UIElements/modeMenu";
 import uiIsland_ from "./UIElements/uiIsland";
 import renderButton_ from "./UIElements/renderButton";
 import Scene from "./Scene";
@@ -41,15 +41,21 @@ function getDispatch() {
 const _default_config = {
     framesPerSecond: 30,
     numberOfFrames: 250,
+    persistence: true,
 }
 
 interface SceneConfig {
     framesPerSecond: number;
     numberOfFrames: number;
+    persistence: boolean;
+}
+
+interface SceneProps {
+    mode: Mode;
 }
 
 let initialized = false;
-function CreateScene(config:Partial<SceneConfig> = {},...objects: CanvasNode[]) {
+function CreateScene(config:Partial<SceneConfig> = {},getObjects: (s:SceneProps) => CanvasNode[]) {
 
     const {canvas,subscribeToCanvasResize} = FullscreenCanvas();
     const resetButton = resetButton_();
@@ -68,6 +74,7 @@ function CreateScene(config:Partial<SceneConfig> = {},...objects: CanvasNode[]) 
         receive(e);
     });
     controller.subscribeToProjectUpdates(() => {
+        if (config.persistence === false) return;
         localStorage.setItem('pinsandcurvescontroller', controller.serializeWorm());
     });
 
@@ -75,7 +82,7 @@ function CreateScene(config:Partial<SceneConfig> = {},...objects: CanvasNode[]) 
         controller, 
         modeManager, 
         subscribeToCanvasResize,
-        objects,
+        getObjects,
     });
 
     const root = new CanvasRoot(scene, canvas);
@@ -160,5 +167,5 @@ function CreateScene(config:Partial<SceneConfig> = {},...objects: CanvasNode[]) 
     initialized = true;
 }
 
-export type { SceneConfig };
+export type { SceneConfig, SceneProps };
 export default CreateScene;

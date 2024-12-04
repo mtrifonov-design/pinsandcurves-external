@@ -1,7 +1,16 @@
 import { Box, RenderProps } from "../CanvasWindows";
 import SignalWindow, { ExtendedRenderProps} from "./SignalWindow";
+import { Mode } from "./Scene/UIElements/modeMenu";
 
 class ImageClass extends SignalWindow {
+
+    windowDidMount(props: { [key: string]: any; }): void {
+        super.windowDidMount(props);
+        if (this.props.layer !== undefined) {
+            this.setLayer(this.props.layer);
+        }
+    }
+
     getBox() {
         return new Box([this.props.x, this.props.y], this.props.w, this.props.h);
     }
@@ -20,6 +29,10 @@ class ImageClass extends SignalWindow {
     }
 
     draw(r: ExtendedRenderProps) {
+        const mode = this.context.mode;
+        if (this.props.modes && !this.props.modes.includes(mode)) {
+            return;
+        }
         r.ctx.save();
         const [aox,aoy] = r.absoluteO;
         const [aux,auy] = this.absoluteUnit;
@@ -35,8 +48,12 @@ function ImageNode(
     y: number = 0,
     w: number = 500,
     h: number = 500,
+    options? : {
+        layer?: number;
+        modes?: Mode[];
+    }
 ) {
-    return ImageClass.Node({src,x,y,w,h});
+    return ImageClass.Node({src,x,y,w,h,...options});
 }
 
 export default ImageNode;

@@ -16,9 +16,11 @@ const getEmptyProject : () => PinsAndCurvesProject = () => ({
     timelineData: {
         numberOfFrames: 100,
         framesPerSecond: 30,
-        playheadPosition: 0
+        playheadPosition: 0,
+        focusRange: [0, 100]
     },
-    signalData: {}
+    signalData: {},
+    templateData: {}
     
 });
 

@@ -1,4 +1,4 @@
-import { RenderProps } from "../CanvasWindows";
+import { Box, RenderProps } from "../CanvasWindows";
 import { CanvasWindow } from "./Dependencies";
 
 const generateId = () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -8,6 +8,21 @@ interface ExtendedRenderProps extends RenderProps {
     useContinuousSignal: (signalName: string, range: [number,number], frame?: number) => number;
     useDiscreteSignal: (signalName: string, frame?: number) => string;
 }
+
+class Frame extends CanvasWindow {
+
+    layer = 1000;
+    getBox() {
+        return new Box([0,0], this.parentW, this.parentH);
+    }
+
+    render(r: RenderProps): void {
+        // console.log('frame render',this.o,this.w,this.h)
+        this.strokeOutline(r,'green')
+    }
+
+}
+
 
 class SignalWindow extends CanvasWindow {
 
@@ -23,6 +38,13 @@ class SignalWindow extends CanvasWindow {
         const playheadPosition = this.context.project.timelineData.playheadPosition;
         return playheadPosition ? playheadPosition : 0;
     }
+
+    getChildren() {
+        if (this.context.mode === 'edit' || this.context.mode === 'record') {
+            return [Frame.Node()]
+        } else return [];
+    }
+
     useSignal(signalId : string, signalType : 'continuous' | 'discrete', range: [number,number] | undefined, frame?: number) : string | number {
         const signalIdIdx = this.context.project.orgData.signalIds.findIndex((csignalId : string) => csignalId === signalId);
         if (signalIdIdx === -1) {
@@ -72,7 +94,7 @@ class SignalWindow extends CanvasWindow {
     }
     render(r: RenderProps): void {
         if (this.context.mode === 'edit' || this.context.mode === 'record') {
-            this.strokeOutline(r,'green')
+            // this.strokeOutline(r,'green')
         }
         const extendedRenderProps = {
             ...r,

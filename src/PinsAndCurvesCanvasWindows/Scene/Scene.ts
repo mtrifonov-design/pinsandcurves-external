@@ -1,7 +1,7 @@
 import { CanvasWindow, Controller, ProjectBuilder, PostMessageAPI, Box, RenderProps, Vec2 } from "../Dependencies";
 import InteractiveCamera from "../InteractiveCamera";
 import modeMenu, { ModeManager, Mode } from "./UIElements/modeMenu";
-
+import type { SceneProps as ExtSceneProps } from "./CreateScene";
 const workingCanvasDimensions : Vec2 = [10000,10000];
 
 class Frame extends CanvasWindow {
@@ -16,7 +16,7 @@ class Frame extends CanvasWindow {
 
     render(r: RenderProps) {
         // console.log("rendering frame")
-        
+        if (this.context.mode === "view") return;
         // draw little crosshair in the middle of the screen
         const ctx = r.ctx;
         const [ox,oy] = r.absoluteO;
@@ -45,6 +45,7 @@ class Frame extends CanvasWindow {
 interface SceneProps {
     controller: Controller;
     modeManager: ModeManager;
+    getObjects: () => CanvasWindow[];
     objects: ((parent: CanvasWindow) => CanvasWindow)[];
 }
 
@@ -71,7 +72,10 @@ class Scene extends CanvasWindow {
     getChildren(props: SceneProps) {
         const w = [];
         w.push(InteractiveCamera.Node({subscribeToCanvasResize: this.props.subscribeToCanvasResize}));
-        w.push(Frame.Node({objects:this.props.objects}));
+        const sceneProps = {
+            mode: this.props.mode,
+        }
+        w.push(Frame.Node({objects:this.props.getObjects(sceneProps)}));
         return w;
     }
 

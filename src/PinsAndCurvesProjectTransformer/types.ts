@@ -17,6 +17,7 @@ interface PinsAndCurvesProjectInstructionTypes {
   updatePlayheadPosition: { type: 'updatePlayheadPosition'; playheadPosition: number }
   updateNumberOfFrames: { type: 'updateNumberOfFrames'; numberOfFrames: number }
   updateProjectName: { type: 'updateProjectName'; projectName: string }
+  updateFocusRange: { type: 'updateFocusRange'; focusRange: [number, number] }
 }
 
 type PinsAndCurvesProjectInstruction = PinsAndCurvesProjectInstructionTypes[keyof PinsAndCurvesProjectInstructionTypes]

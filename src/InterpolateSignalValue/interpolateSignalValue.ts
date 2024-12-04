@@ -72,7 +72,7 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
 
 
             ${nextPinFunctionString}`
-        interpolationFunction = new Function("context",completeFunctionString);
+        interpolationFunction = new Function("context","templates",completeFunctionString);
         cachedFunctions[signalId+nextPinId] = {
             functionString: nextPinFunctionString,
             cachedFunction: interpolationFunction as InterpolationFunction

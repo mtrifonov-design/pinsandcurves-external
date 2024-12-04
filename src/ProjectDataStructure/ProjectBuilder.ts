@@ -68,6 +68,7 @@ class ProjectBuilder {
     }
     setTimelineData(numberOfFrames: number, framesPerSecond: number, playheadPosition: number) {
         this._project.timelineData = {
+            ...this._project.timelineData,
             numberOfFrames,
             framesPerSecond,
             playheadPosition
@@ -82,6 +83,10 @@ class ProjectBuilder {
     }
     getProject() {
         return this._project;
+    }
+
+    addCurveTemplate(curveId: string, curve: Curve) {
+        this._project.templateData[curveId] = curve;
     }
 }
 

@@ -1,17 +1,38 @@
 import { Box, RenderProps } from "../CanvasWindows";
 import SignalWindow, { ExtendedRenderProps} from "./SignalWindow";
+import { Mode } from "./Scene/UIElements/modeMenu";
 
+class DrawClass extends SignalWindow {
 
-class EffectClass extends SignalWindow {
+    windowDidMount(props: { [key: string]: any; }): void {
+        super.windowDidMount(props);
+        if (this.props.layer !== undefined) {
+            this.setLayer(this.props.layer);
+        }
+    }
+
     getBox() {
         return new Box([this.props.x, this.props.y], this.props.w, this.props.h);
     }
     draw(r: ExtendedRenderProps) {
+        const mode = this.context.mode;
+        if (this.props.modes && !this.props.modes.includes(mode)) {
+            return;
+        }
+
+
         r.ctx.save();
         const [aox,aoy] = r.absoluteO;
         r.ctx.translate(aox,aoy);
 
-        const originalCtx = r.ctx;
+        let originalCtx = r.ctx;
+        // if (this.props.separateCanvas) {
+        //     const canvas = document.createElement('canvas');
+        //     canvas.width = this._root?.canvas.width as number;
+        //     canvas.height = this._root?.canvas.height as number;
+        //     originalCtx = canvas.getContext('2d') as CanvasRenderingContext2D;
+        // }
+
 
         const a2cm = this.absoluteToCanvasMeasure;
         const [aux,auy] = this.absoluteUnit;
@@ -62,6 +83,9 @@ class EffectClass extends SignalWindow {
             setTransform: (a: number, b: number, c: number, d: number, e: number, f: number) => {
                 originalCtx.setTransform(a,b,c,d,e * aux,f * auy);
             },
+            createRadialGradient: (x0: number, y0: number, r0: number, x1: number, y1: number, r1: number) => {
+                return originalCtx.createRadialGradient(x0 * aux,y0 * auy,r0 * aux,x1 * aux,y1 * auy,r1 * aux);
+            }
         }
         const adjustedCtx = new Proxy(r.ctx, {
             get: (target, prop) => {
@@ -88,20 +112,29 @@ class EffectClass extends SignalWindow {
         adjustedCtx.beginPath();
         adjustedCtx.rect(0,0,this.props.w,this.props.h);
         adjustedCtx.clip();
-        this.props.draw(adjustedCtx)
+        this.props.draw(adjustedCtx);
+        // if (this.props.separateCanvas) {
+        //     r.ctx.drawImage(originalCtx.canvas,0,0);
+        // }
 
         r.ctx.restore();
     }
 }
 
-function Effect(
+function Draw(
     draw: (ctx: CanvasRenderingContext2D) => void,
     x: number = 0,
     y: number = 0,
     w: number = 500,
     h: number = 500,
+    options? : {
+        layer?: number,
+        modes?: Mode[];
+    }
 ) {
-    return EffectClass.Node({draw,x,y,w,h});
+
+
+    return DrawClass.Node({draw,x,y,w,h,...options});
 }
 
-export default Effect;
+export default Draw;

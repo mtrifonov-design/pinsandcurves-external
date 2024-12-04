@@ -49,6 +49,7 @@ interface ProjectTools {
     redo: () => void;
     returnToLastCommit: () => void;
     pushUpdate: () => void;
+    updateFocusRange: (focusRange: [number, number]) => void;
 }
 
 interface PACProjectController {

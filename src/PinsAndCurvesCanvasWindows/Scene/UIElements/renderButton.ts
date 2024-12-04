@@ -2,8 +2,8 @@
 import { Project, ProjectTools } from '../../../PinsAndCurvesProjectController';
 import { CanvasRoot } from '../../Dependencies';
 
-async function recordCanvas(canvas : HTMLCanvasElement, frames: number, width : number, height: number, fps:number, goToFrame: (frameIndex: number) => void) {
-    const stream = canvas.captureStream(fps); // Capture canvas as a video stream
+async function recordCanvas(canvas : HTMLCanvasElement, startFrame: number, endFrame: number, fps:number, goToFrame: (frameIndex: number) => void) {
+    const stream = canvas.captureStream(0); // Capture canvas as a video stream
     const mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
     const chunks = []; // Store recorded chunks
 
@@ -30,18 +30,34 @@ async function recordCanvas(canvas : HTMLCanvasElement, frames: number, width : 
     mediaRecorder.start();
 
     // Render each frame on the canvas
-    for (let i = 0; i < frames; i++) {
-        goToFrame(i);
-        await new Promise((resolve) => setTimeout(resolve, 1000 / fps));
+    // for (let i = startFrame; i < endFrame; i++) {
+    //     goToFrame(i);
+    //     stream.requestFrame();
+    //     await new Promise((resolve) => setTimeout(resolve, 100));
+    //     requestAnimationFrame(() => goToFrame(i));
+    // }
+
+    let frame = startFrame;
+    const captureFrame = () => {
+        goToFrame(frame)
+        stream.getTracks()[0].requestFrame();
+        frame++;
+        if (frame <= endFrame) {
+            requestAnimationFrame(captureFrame);
+        } else {
+            mediaRecorder.stop();
+        }
     }
 
-    mediaRecorder.stop();
+    captureFrame();
+
+    // mediaRecorder.stop();
 }
 
 async function createVideo(canvas: HTMLCanvasElement, projectTools: ProjectTools,project: Project) {
     const frameRate = project.timelineData.framesPerSecond;
-    const frameCount = project.timelineData.numberOfFrames;
-    recordCanvas(canvas, frameCount, canvas.width, canvas.height, frameRate, (frameIndex) => {
+    const [startFrame, endFrame] = project.timelineData.focusRange;
+    recordCanvas(canvas, startFrame, endFrame, frameRate, (frameIndex) => {
         projectTools.updatePlayheadPosition(frameIndex,false);
     });
 }

@@ -15,11 +15,14 @@ function render(camera: Box, windows: CanvasWindow[], canvas: HTMLCanvasElement,
     const layers = Array.from(new Set(intersectingWindows.map(w => w.getLayer()))).sort((a, b) => a - b);
     for (let i = 0; i < layers.length; i++) {
         const layer = intersectingWindows.filter(w => w.getLayer() === layers[i]);
-        ctx.save();
+        const layerCanvas = document.createElement('canvas');
+        layerCanvas.width = canvas.width;
+        layerCanvas.height = canvas.height;
+        const layerCtx = layerCanvas.getContext('2d') as CanvasRenderingContext2D;
         for (let w of layer) {
-            w.renderPrimitive(ctx);
+            w.renderPrimitive(layerCtx);
         }
-        ctx.restore();
+        ctx.drawImage(layerCanvas, 0, 0);
     }
 }
 

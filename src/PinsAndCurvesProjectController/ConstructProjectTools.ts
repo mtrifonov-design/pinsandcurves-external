@@ -674,6 +674,29 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
             if (commit) {pushCommit()}
             pushUpdate()
         },
+        updateFocusRange(range: [number, number]) : void {
+            const [start, end] = range;
+            returnToCommit()
+            pushCommand(() => {
+                const project = getProject();
+                return {
+                type: 'addNextState',
+                forward: [
+                    {
+                        type: 'updateFocusRange',
+                        focusRange: [start,end]
+                    }
+                ],
+                backward: [
+                    {
+                        type: 'updateFocusRange',
+                        focusRange: project.timelineData.focusRange
+                    }
+                ]
+            }})
+            pushCommit()
+            pushUpdate()
+        },
         updateNumberOfFrames(numberOfFrames: number) : void {
             returnToCommit()
             pushCommand(() => {

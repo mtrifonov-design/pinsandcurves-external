@@ -259,6 +259,13 @@ function updateProjectName(draft: Project, instruction: InstructionTypes['update
     draft.metaData.name = projectName;
 }
 
+function updateFocusRange(draft: Project, instruction: InstructionTypes['updateFocusRange']) {
+    const { focusRange } = instruction;
+    const [start, end] = focusRange;
+    if (start < 0 || end > draft.timelineData.numberOfFrames || start >= end) throw new Error(`Invalid focus range`);
+    draft.timelineData.focusRange = focusRange;
+}
+
 export {
     addPin,
     deletePin,
@@ -277,4 +284,5 @@ export {
     updateProjectName,
     generateId,
     updatePins,
+    updateFocusRange
 }

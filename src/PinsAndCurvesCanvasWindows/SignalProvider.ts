@@ -8,7 +8,7 @@ type SignalProvider = {
     frame: () => number,
     project: () => PinsAndCurvesProject,
     setDiscreteSignal: (signalId: string, value: string, frame: number) => void,
-    setContinuousSignal: (signalId: string, value: number, frame: number) => void,
+    setContinuousSignal: (signalId: string, value: number, frame: number, range: [number,number]) => void,
 }
 
 class SignalProviderClass extends SignalWindow {
@@ -19,7 +19,7 @@ class SignalProviderClass extends SignalWindow {
             frame:() => this.currentFrame,
             project: () => this.context.project,
             setDiscreteSignal: (signalId: string, value: string, frame: number) => this.setDiscreteSignalValue(signalId, value, true, frame),
-            setContinuousSignal: (signalId: string, value: number, frame: number) => this.setContinuousSignalValue(signalId, value, true, [0,1], frame),
+            setContinuousSignal: (signalId: string, value: number, frame: number, range: [number,number]) => this.setContinuousSignalValue(signalId, value, true, range, frame),
         }
 
         return this.props.getChildren(signal);
