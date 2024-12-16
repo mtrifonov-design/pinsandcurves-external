@@ -1,5 +1,6 @@
 
 import { interpolateSignalValue } from '.';
+import { Project } from '../PinsAndCurvesProjectController';
 import type { InterpolationFunctionContext, InterpolationFunction, InterpolateSignalError, InterpolateSignalErrorLog, InterpolateSignalReturnType } from './types';
 
 function linearInterpolation(a: number, b: number, t: number): number {
@@ -33,27 +34,31 @@ type GetContextProps = {
     nextPinValue: number,
     previousPinTime: number,
     previousPinValue: number,
+    pinId: string,
     relativeTime: number,
     frame: number,
     numberOfFrames: number,
     framesPerSecond: number,
     range: [number, number],
+    project: Project,
     interpolateSignalValueAtTime: (signalId: string, frame: number) => number,
 }
 
 function getContext(p: GetContextProps): InterpolationFunctionContext {
 
-    const { nextPinTime, range, frame, numberOfFrames, framesPerSecond, nextPinValue, previousPinTime, previousPinValue, relativeTime, interpolateSignalValueAtTime } = p;
+    const { nextPinTime, project, range, pinId, frame, numberOfFrames, framesPerSecond, nextPinValue, previousPinTime, previousPinValue, relativeTime, interpolateSignalValueAtTime } = p;
 
     const [minValue, maxValue] = range;
 
     return {
         nextPinTime,
         nextPinValue,
+        project,
         previousPinTime,
         previousPinValue,
         relativeTime,
         frame,
+        pinId,
         numberOfFrames,
         framesPerSecond,
         maxValue,

@@ -11,15 +11,35 @@ import { throttle } from "lodash";
 import RenderCanvas from "../RenderCanvas";
 import { CanvasNode } from "../../CanvasWindows";
 
+const CLIENTURL = 'https://pinsandcurves.app';
+
 function getController(dispatch: any, config: SceneConfig) {
     // check if project in local storage
     let worm = localStorage.getItem('pinsandcurvescontroller');
     if (worm) {
         const c = Controller.HostFromSerializedWorm(dispatch, worm);
+        c.projectTools.updateFramesPerSecond(config.framesPerSecond);
+        c.projectTools.updateNumberOfFrames(config.numberOfFrames);
+        for (let key in config.templateCurves) {
+            if (c.getProject().templateData[key]) {
+                c.projectTools.updateCurveTemplate(key, config.templateCurves[key].toString());
+                continue;
+            }
+            c.projectTools.addCurveTemplate(key, config.templateCurves[key].toString());
+        }
+        for (let key in c.getProject().templateData) {
+            if (!config.templateCurves[key]) {
+                c.projectTools.deleteCurveTemplate(key);
+            }
+        }
         return c;
     } else {
         const pb = new ProjectBuilder();
         pb.setTimelineData(config.numberOfFrames, config.framesPerSecond, 20);
+        for (let key in config.templateCurves) {
+            pb.addCurveTemplate(key, config.templateCurves[key].toString());
+        }
+
         const c = Controller.HostFromProject(dispatch, pb.getProject());
         return c;
     }
@@ -28,8 +48,8 @@ function getController(dispatch: any, config: SceneConfig) {
 function getDispatch() {
     let dispatch = (e: any) => { };
     if (window.parent !== null) {
-        console.log(window.parent.postMessage({ test: "something" }, 'http://localhost:6006'));
-        const dispatchProjectEvent = PostMessageAPI.dispatchProjectEvent(window.parent, 'http://localhost:6006');
+        console.log(window.parent.postMessage({ test: "something" }, CLIENTURL));
+        const dispatchProjectEvent = PostMessageAPI.dispatchProjectEvent(window.parent, CLIENTURL);
         dispatch = (e: any) => {
             dispatchProjectEvent(e);
         };
@@ -42,12 +62,16 @@ const _default_config = {
     framesPerSecond: 30,
     numberOfFrames: 250,
     persistence: true,
+    renderResolution: [1920, 1080] as [number,number],
+    templateCurves: {},
 }
 
 interface SceneConfig {
     framesPerSecond: number;
     numberOfFrames: number;
     persistence: boolean;
+    renderResolution: [number, number];
+    templateCurves: { [key: string]: Function };
 }
 
 interface SceneProps {
@@ -61,15 +85,16 @@ function CreateScene(config:Partial<SceneConfig> = {},getObjects: (s:SceneProps)
     const resetButton = resetButton_();
     const loadInterface = loadInterface_();
     const saveInterface = saveInterface_();
-
+    const composedConfig = { ..._default_config, ...config };
     const renderCanvas = RenderCanvas();
 
     const dispatch = getDispatch();
-    const controller = getController(dispatch, { ..._default_config, ...config });
+
+    const controller = getController(dispatch, composedConfig);
     const {modeMenu,modeManager} = modeMenu_();
     document.body.appendChild(canvas);
     const receive = controller.receive.bind(controller);
-    const subscribe = PostMessageAPI.subscribeToProjectEvents('http://localhost:6006');
+    const subscribe = PostMessageAPI.subscribeToProjectEvents(CLIENTURL);
     subscribe((e: any) => {
         receive(e);
     });
@@ -95,20 +120,15 @@ function CreateScene(config:Partial<SceneConfig> = {},getObjects: (s:SceneProps)
             renderCanvas.style.display = 'block';
 
             // disable primary camera
-            root.windows.forEach((w : any) => {
-                w._isPrimaryCamera = false;
-            });
             const sceneCamera = root.windows.find((w : any) => w.isSceneCamera !== undefined) as any;
             if (!sceneCamera) throw new Error("Could not find scene camera");
             sceneCamera.setAsPrimaryCamera();
-            renderCanvas.width = sceneCamera.w;
-            renderCanvas.height = sceneCamera.h;
+            const [w,h] = composedConfig.renderResolution;
+            renderCanvas.width = w;
+            renderCanvas.height = h;
             root.canvas = renderCanvas;
         } else {
             // disable primary camera
-            root.windows.forEach((w : any) => {
-                w._isPrimaryCamera = false;
-            });
             const interactiveCamera = root.windows.find((w : any) => w.isInteractiveCamera !== undefined);
             if (!interactiveCamera) throw new Error("Could not find interactive camera");
             interactiveCamera.setAsPrimaryCamera();

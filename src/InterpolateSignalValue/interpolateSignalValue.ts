@@ -8,6 +8,7 @@ import type { InterpolationFunctionContext,
 } from './types';
 
 import getContext from './getContext';
+import getTemplates from './getTemplates';
 
 type Project = ProjectDataStructure.PinsAndCurvesProject;
 type SignalData = ProjectDataStructure.SignalData;
@@ -73,6 +74,7 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
 
             ${nextPinFunctionString}`
         interpolationFunction = new Function("context","templates",completeFunctionString);
+        // console.log(interpolationFunction.toString())
         cachedFunctions[signalId+nextPinId] = {
             functionString: nextPinFunctionString,
             cachedFunction: interpolationFunction as InterpolationFunction
@@ -91,8 +93,10 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
             nextPinTime,
             nextPinValue,
             previousPinTime,
+            project,
             previousPinValue,
             relativeTime,
+            pinId: nextPinId,
             frame,
             range: [min,max],
             numberOfFrames: project.timelineData.numberOfFrames,
@@ -110,7 +114,9 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
                 return resultVal;
             },
         });
-        value  = interpolationFunction(context);
+        const templates = getTemplates(project);
+        // console.log(templates)
+        value  = interpolationFunction(context,templates);
     } catch (e : any) {
         errorLog.push({
             signalId,

@@ -1,3 +1,5 @@
+import { Project } from "../PinsAndCurvesProjectController";
+
 type InterpolationFunctionContext = {
     nextPinTime: number,
     nextPinValue: number,
@@ -9,6 +11,8 @@ type InterpolationFunctionContext = {
     framesPerSecond: number,
     maxValue: number,
     minValue: number,
+    pinId: string,
+    project: Project,
 
     linearInterpolation: (a: number, b: number, t: number) => number,
     easeInCubic: (x: number) => number,

@@ -4,6 +4,7 @@ import typescript from "@rollup/plugin-typescript";
 import dts from "rollup-plugin-dts";
 import terser from "@rollup/plugin-terser";
 import peerDepsExternal from "rollup-plugin-peer-deps-external";
+import replace from "@rollup/plugin-replace";
 
 const packageJson = require("./package.json");
 
@@ -72,4 +73,21 @@ export default [
     }],
     plugins: [dts.default()],
   },
+  {
+    input: "src/PinsAndCurvesHost/index.ts", // Entry point of your library
+    output: [
+      {
+        file: "dist/PinsAndCurvesHost/PinsAndCurvesHost.umd.js", // The bundled file
+        format: "umd", // Universal Module Definition (UMD)
+        name: "PinsAndCurvesHost", // Name of the global variable in the browser
+      },
+    ],
+    plugins: [resolve(), commonjs(), 
+      replace({
+        "process.env.NODE_ENV": JSON.stringify("production"), // Replace with "production" or "development"
+        preventAssignment: true, // Required to suppress warnings
+      }),
+      typescript({ tsconfig: "./tsconfig.json" }),
+      terser()],
+  }
 ];

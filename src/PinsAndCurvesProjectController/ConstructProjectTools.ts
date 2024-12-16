@@ -758,6 +758,68 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
             }})
             pushCommit()
             pushUpdate()
+        },
+        addCurveTemplate(curveId: string, functionString: string) : void {
+            pushCommand(() => {
+                return {
+                type: 'appendToCurrentState',
+                forward: [
+                    {
+                        type: 'addCurveTemplate',
+                        curveId,
+                        functionString
+                    }
+                ],
+                backward: [
+                    {
+                        type: 'deleteCurveTemplate',
+                        curveId
+                    }
+                ]
+            }})
+            pushUpdate()
+        },
+        deleteCurveTemplate(curveId: string) : void {
+            pushCommand(() => {
+                return {
+                type: 'appendToCurrentState',
+                forward: [
+                    {
+                        type: 'deleteCurveTemplate',
+                        curveId
+                    }
+                ],
+                backward: [
+                    {
+                        type: 'addCurveTemplate',
+                        curveId,
+                        functionString: (getProject().templateData[curveId] as string)
+                    }
+                ]
+                
+            }})
+            pushUpdate()
+        },
+        updateCurveTemplate(curveId: string, functionString: string) : void {
+            pushCommand(() => {
+                return {
+                type: 'appendToCurrentState',
+                forward: [
+                    {
+                        type: 'updateCurveTemplate',
+                        curveId,
+                        functionString
+                    }
+                ],
+                backward: [
+                    {
+                        type: 'updateCurveTemplate',
+                        curveId,
+                        functionString: (getProject().templateData[curveId] as string)
+                    }
+                ]
+            }})
+            pushUpdate()
         }
 
     }

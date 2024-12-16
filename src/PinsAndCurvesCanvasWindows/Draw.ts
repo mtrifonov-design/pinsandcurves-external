@@ -26,14 +26,6 @@ class DrawClass extends SignalWindow {
         r.ctx.translate(aox,aoy);
 
         let originalCtx = r.ctx;
-        // if (this.props.separateCanvas) {
-        //     const canvas = document.createElement('canvas');
-        //     canvas.width = this._root?.canvas.width as number;
-        //     canvas.height = this._root?.canvas.height as number;
-        //     originalCtx = canvas.getContext('2d') as CanvasRenderingContext2D;
-        // }
-
-
         const a2cm = this.absoluteToCanvasMeasure;
         const [aux,auy] = this.absoluteUnit;
 

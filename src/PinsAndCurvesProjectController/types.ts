@@ -50,6 +50,9 @@ interface ProjectTools {
     returnToLastCommit: () => void;
     pushUpdate: () => void;
     updateFocusRange: (focusRange: [number, number]) => void;
+    addCurveTemplate: (curveId: string, functionString: string) => void;
+    deleteCurveTemplate: (curveId: string) => void;
+    updateCurveTemplate: (curveId: string, functionString: string) => void;
 }
 
 interface PACProjectController {

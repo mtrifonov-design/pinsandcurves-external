@@ -33,7 +33,10 @@ const transformers : Transformers = {
     updatePlayheadPosition : t.updatePlayheadPosition,
     updateNumberOfFrames : t.updateNumberOfFrames,
     updateProjectName : t.updateProjectName,
-    updateFocusRange : t.updateFocusRange
+    updateFocusRange : t.updateFocusRange,
+    updateCurveTemplate : t.updateCurveTemplate,
+    addCurveTemplate : t.addCurveTemplate,
+    deleteCurveTemplate : t.deleteCurveTemplate,
 
   };
 

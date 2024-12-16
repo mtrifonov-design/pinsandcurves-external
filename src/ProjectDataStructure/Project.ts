@@ -31,7 +31,7 @@ interface ContinuousSignal {
     id: string;
     type: 'continuous';
     range: [number, number];
-    pinIds: string[];
+    pinIds: string[]; // expected to be sorted by pinTime
     pinTimes: {
         [pinId: string]: number | undefined;
     };
@@ -46,7 +46,7 @@ interface ContinuousSignal {
 interface DiscreteSignal {
     id: string;
     type: 'discrete';
-    pinIds: string[];
+    pinIds: string[]; // expected to be sorted by pinTime
     pinTimes: {
         [pinId: string]: number | undefined;
     };

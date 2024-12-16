@@ -58,7 +58,9 @@ abstract class CanvasWindow<
     _parent: CanvasWindow | undefined;
     children: CanvasWindow[] = [];
     _isPrimaryCamera: boolean = false;
-    _needsUpdate: boolean = true;
+    _needsUpdate: boolean = false;
+    _needsUpdate_root: boolean = false;
+    _renderAlways: boolean = false;
 
 
     get _cameraSnapshot() {
@@ -72,7 +74,7 @@ abstract class CanvasWindow<
     }
 
     setAsPrimaryCamera() {
-        this._isPrimaryCamera = true;
+        this._root?.installCamera(this);
     }
 
     // state management
@@ -83,6 +85,10 @@ abstract class CanvasWindow<
     //     this.externalState = externalState;
     //     this.onExternalStateUpdate(externalState)
     // };
+
+
+    updateWhenCameraChanges = false;
+
     state: State = undefined as State;
     setState(s: State) {
         if (this.state === s) throw new Error('Cannot set state to previous state. ');
@@ -91,7 +97,13 @@ abstract class CanvasWindow<
             this.state = s;
             return;
         }
-        this._needsUpdate = true;
+        if (this._isPrimaryCamera) {
+            this._root?.windows.forEach(w => {
+                if (w.updateWhenCameraChanges) {
+                    w._needsUpdate = true;
+                }
+            });
+        }
         this._root?.scheduleStateUpdate(this,s);
     }
 
@@ -102,7 +114,13 @@ abstract class CanvasWindow<
             this.context[key] = value;
             return;
         }
-        this._needsUpdate = true;
+        if (this._isPrimaryCamera) {
+            this._root?.windows.forEach(w => {
+                if (w.updateWhenCameraChanges) {
+                    w._needsUpdate = true;
+                }
+            });
+        }
         this.context[key] = value;
         this._root?.scheduleContextUpdate(this,key,value);
     }
@@ -133,7 +151,7 @@ abstract class CanvasWindow<
         else {
             const box = this.getBox();
             this._boxSnapshot = box;
-            this._root?.expirePositionsAfterTaskCompletes();
+            // this._root?.expirePositionsAfterTaskCompletes();
             return box;
         }
     }
@@ -141,6 +159,7 @@ abstract class CanvasWindow<
     getBox() : Box {
         return new Box([0,0],0,0);
     }
+
 
     get o() {
         return this.getBoxPrimitive().o;
@@ -152,30 +171,107 @@ abstract class CanvasWindow<
         return this.getBoxPrimitive().h;
     }
 
-    didMount : boolean = false;
-    updateSelf() : void {
 
-        if (this._isPrimaryCamera) {
-            this._root?.installCamera(this)
+    cameraPassUpdateSelf() {
+        if (this._isPrimaryCamera) {
+            this._root?.windows.forEach(w => {
+                this._root?.taintLayer(w.layer);
+            });
+            return;
         }
 
-        this._needsUpdate = false;
-        if (!this.didMount) {
-            this.didMount = true;
-            this.windowDidMountPrimitive({ ... this.props });
+        if (this._needsUpdate) {
+            this._boxSnapshot = undefined;
+            this._root?.taintLayer(this.layer);
         }
-        this.updateChildren();
-        this.windowDidUpdate({ ... this.props });
+        this.cameraPassUpdateChildren();
+        if (this._needsUpdate) {
+            this.windowDidUpdate({ ... this.props });
+        }
     }
 
-    updateChildren() : void {
+    cameraPassUpdateChildren() {
         this.childIndex = 0;
         const children = this.getChildren(this.props).map(c => c(this));
         const aboutToUnmount = this.children.filter(c => !children.includes(c));
+        const aboutToMount = children.filter(c => !this.children.includes(c));
         this.children = children;
         aboutToUnmount.forEach(c => c.windowWillUnmount());
-        this.children.forEach(c => c.updateSelf());
+        aboutToMount.forEach(c => c.windowDidMountPrimitive(c.props));
+        const updateCandidate = this.children.find(c => c._needsUpdate);
+        this.children.forEach(c => {
+            c._needsUpdate = true;
+        });
+        if (updateCandidate) {
+            updateCandidate.cameraPassUpdateSelf();
+        } else return;
+
     }
+
+    regularPassUpdateSelf() {
+
+        this._boxSnapshot = undefined;
+        this._root?.taintLayer(this.layer);
+
+        this.regularPassUpdateChildren();
+
+        this.windowDidUpdate({ ... this.props });
+        
+    }
+
+    regularPassUpdateChildren() {
+        this.childIndex = 0;
+        const children = this.getChildren(this.props).map(c => c(this));
+        const aboutToUnmount = this.children.filter(c => !children.includes(c));
+        const aboutToMount = children.filter(c => !this.children.includes(c));
+        this.children = children;
+        aboutToUnmount.forEach(c => c.windowWillUnmount());
+        aboutToMount.forEach(c => {c.windowDidMountPrimitive(c.props)});
+        this.children.forEach(c => {
+            c.regularPassUpdateSelf();
+        });
+    }
+
+    // didMount : boolean = false;
+    // updateSelf() : void {
+    //     const performUpdate = this._needsUpdate;
+    //     if (performUpdate) {
+    //         this._boxSnapshot = undefined;
+    //         if (this._isPrimaryCamera) {
+    //             this._root?.windows.forEach(w => {
+    //                 this._root?.taintLayer(w.layer);
+    //                 // w._boxSnapshot = undefined
+    //             });
+    //         }
+    //         this._root?.taintLayer(this.layer);
+    //         // if (!this.didMount) {
+    //         //     this.didMount = true;
+    //         //     this.windowDidMountPrimitive({ ... this.props });
+    //         // }
+    //     }
+    //     this.updateChildren();
+    //     if (performUpdate) {
+    //         this.windowDidUpdate({ ... this.props });
+    //     }
+    // }
+
+    // updateChildren() : void {
+    //     this.childIndex = 0;
+    //     const children = this.getChildren(this.props).map(c => c(this));
+    //     const aboutToUnmount = this.children.filter(c => !children.includes(c));
+    //     const aboutToMount = children.filter(c => !this.children.includes(c));
+    //     this.children = children;
+    //     aboutToUnmount.forEach(c => c.windowWillUnmount());
+    //     aboutToMount.forEach(c => c.windowDidMountPrimitive(c.props));
+    //     this.children.forEach(c => {
+    //         if (c._needsUpdate) {
+    //             c.updateSelf();
+    //         }
+    //         if (aboutToMount.includes(c)) {
+    //             this._root?.scheduleUpdate(c);
+    //         }
+    //     });
+    // }
 
     getChildren(props?: Props) : ((parent: CanvasWindow) => CanvasWindow)[] {
         return [];

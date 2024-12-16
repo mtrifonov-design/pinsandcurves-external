@@ -20,6 +20,7 @@ class Crosshair extends SignalWindow {
 
     render(r: RenderProps): void {
         const mode = this.context.mode;
+        if( mode === "view") return;
         const [aux,auy] = this.absoluteUnit;
         const [aox,aoy] = r.absoluteO;
         const [cx,cy] = [aox + this.w / 2 * aux, aoy + this.h / 2 * auy];
@@ -53,7 +54,7 @@ class VectorHandleBox extends SignalWindow {
         this.setState({dragging: false});
     }
 
-    getChildren(props?: { [key: string]: any; } | undefined): ((parent: CanvasWindow) => CanvasWindow)[] {
+    getChildren(props?: { [key: string]: any; } | undefined) {
         // return [TestNode.Node({})];
         // return [Crosshair.Node({o: [0,0], alpha: 0.5})];
         return [Crosshair.Node({o: [0,0], dragging: this.state.dragging, anchor: this.props.anchor})];
@@ -65,7 +66,9 @@ class VectorHandleBox extends SignalWindow {
     }
 
     onMouseDown(p: MouseHandlerProps, e: MouseEvent): void {
-        if (p.pointInside && this.context.mode === "record") this.setState({dragging: true});
+        if (p.pointInside && this.context.mode === "record") {this.setState({dragging: true});
+            p.terminateEvent();
+        };
     }
 
     chooseSetSignalValueFunction(id: string, value: any, commit: boolean) {
@@ -195,7 +198,7 @@ class VectorHandleBox extends SignalWindow {
 
 class OnionSkin extends SignalWindow {
 
-    getChildren(props?: { [key: string]: any; } | undefined): ((parent: CanvasWindow) => CanvasWindow)[] {
+    getChildren(props?: { [key: string]: any; } | undefined) {
         const [v1,v2] = this.getOnionSkinCrosshairPositions();
         const [cux,cuy] = this.canvasUnit;
         const displacement = [(side/2) * cux,(side/2) * cuy] as Vec2;
@@ -303,7 +306,7 @@ interface Props {
 
 class VectorHandleContent extends SignalWindow {
 
-    getChildren(props?: { [key: string]: any; } | undefined): ((parent: CanvasWindow) => CanvasWindow)[] {
+    getChildren(props?: { [key: string]: any; } | undefined) {
         const children = this.props.children ? [...this.props.children] : [];
         const nprops ={id: this.props.id, topProps: this.props, anchor: this.parentO}
         const vectorHandleBox = VectorHandleBox.Node(nprops)
@@ -428,7 +431,7 @@ class VectorHandleContent extends SignalWindow {
 
 class VectorHandle extends SignalWindow {
 
-    getChildren(props?: { [key: string]: any; } | undefined): ((parent: CanvasWindow) => CanvasWindow)[] {
+    getChildren(props?: { [key: string]: any; } | undefined) {
         const children = [];
         children.push(VectorHandleContent.Node(this.props));
         if (this.props.onionSkin) children.push(OnionSkin.Node({id: this.props.id, topProps: this.props, anchor: this.parentO}));

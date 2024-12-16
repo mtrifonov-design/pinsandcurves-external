@@ -7,6 +7,11 @@ import { add, dotMultiply } from "mathjs";
 const canvas = document.getElementById("demo-canvas") as HTMLCanvasElement;
 
 class MeasureWindow extends CanvasWindow {
+
+    windowDidMount(props: { [key: string]: any; }): void {
+        if (this.props.camera) this.setAsPrimaryCamera();
+    }
+
     getBox() {
         return new Box([0,0],100,100);
     }
@@ -26,9 +31,10 @@ class RootWindow extends CanvasWindow {
         // const w4 = InteractiveCamera.Node();
         // return [w1,w2,w3,w4];
         const w = [];
-        for (let i = 0; i < 10000; i++) {
+        for (let i = 0; i < 10; i++) {
             w.push(MeasureWindow.Node());
         }
+        w.push(MeasureWindow.Node({camera:true}));
         return w;
     }
     windowDidUpdate(props: { [key: string]: any; }): void {
@@ -54,6 +60,7 @@ const rootWindow = RootWindow.Node();
 // Initialize the CanvasRoot
 const canvasRoot = new CanvasRoot(rootWindow, canvas);
 (window as any).canvasRoot = canvasRoot;
+// canvasRoot.onUpdate(() => console.log(JSON.stringify(canvasRoot.scheduledUpdateNodeMap,null,2)));
 
 // Example rendering logic
 class ExampleWindow extends CanvasWindow {

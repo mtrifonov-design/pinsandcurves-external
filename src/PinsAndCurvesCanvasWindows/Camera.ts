@@ -28,8 +28,8 @@ class CameraClass extends SignalWindow {
 
 }
 
-function Camera(props : Omit<CameraProps,'children'>,...children : CanvasNode[]) {
-    const camera = CameraClass.Node({ ...props, children });
+function Camera(x: number,y:number, w:number,h: number,...children : CanvasNode[]) {
+    const camera = CameraClass.Node({ x,y,w,h, children });
     return camera;
 }
 

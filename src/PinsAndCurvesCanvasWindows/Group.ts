@@ -3,25 +3,25 @@ import SignalWindow, { ExtendedRenderProps} from "./SignalWindow";
 
 class GroupClass extends SignalWindow {
     getBox() {
-        return new Box([this.props.x, this.props.y], this.props.w, this.props.h);
+        const x = this.props.x || 0;
+        const y = this.props.y || 0;
+        return new Box([x,y], 0,0);
     }
     getChildren() {
-        return this.props.children;
+        return this.props.getChildren();
     }
 }
 
 function Group(
-    props: {
-        x: number,
-        y: number,
-        w: number,
-        h: number,
+
+    getChildren: () => CanvasNode[],
+    options?: {
+        x?: number,
+        y?: number,
     },
-    ...children: CanvasNode[]
 
 ) {
-    const {x,y,w,h} = props;
-    return GroupClass.Node({x,y,w,h,children});
+    return GroupClass.Node({getChildren,...options});
 }
 
 export default Group;

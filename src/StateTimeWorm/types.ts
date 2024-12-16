@@ -46,6 +46,7 @@ type WormCommand<Instruction> =
 | { type: "goToNamedState", namedState: string }
 | { type: "saveAsNamedState", namedState: string }
 | { type: "addNextState", forward: Instruction[], backward: Instruction[] }
+| { type: "appendToCurrentState", forward: Instruction[], backward: Instruction[] }
 
 export type {StateTimeWorm, Result, Transformer, InternalWorm, StateTimeWormConstructor, WormCommand}
 

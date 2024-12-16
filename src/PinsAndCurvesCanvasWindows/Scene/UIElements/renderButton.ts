@@ -1,6 +1,7 @@
 
 import { Project, ProjectTools } from '../../../PinsAndCurvesProjectController';
 import { CanvasRoot } from '../../Dependencies';
+import { SceneConfig } from '../CreateScene';
 
 async function recordCanvas(canvas : HTMLCanvasElement, startFrame: number, endFrame: number, fps:number, goToFrame: (frameIndex: number) => void) {
     const stream = canvas.captureStream(0); // Capture canvas as a video stream
@@ -43,7 +44,7 @@ async function recordCanvas(canvas : HTMLCanvasElement, startFrame: number, endF
         stream.getTracks()[0].requestFrame();
         frame++;
         if (frame <= endFrame) {
-            requestAnimationFrame(captureFrame);
+            setTimeout(captureFrame, 1000 / fps);
         } else {
             mediaRecorder.stop();
         }

@@ -39,7 +39,18 @@ function addPin(draft: Project, instruction: InstructionTypes['addPin']) {
         if (!functionString) throw new Error(`Curve is required for continuous signals`);
     }
 
-    signal.pinIds.push(pinId);
+    
+    // push to pin Ids at the appropriate index
+    const pinIds = signal.pinIds;
+    if (pinIds.length === 0) {
+        signal.pinIds.push(pinId);
+    } else {
+        let index = pinIds.findIndex(id => signal.pinTimes[id] as number >= pinTime);
+        if (index === -1) index = pinIds.length;
+        signal.pinIds.splice(index, 0, pinId);
+    }
+
+
     signal.pinTimes[pinId] = pinTime;
     signal.pinValues[pinId] = pinValue;
     if (signalType === 'continuous') signal.curves[pinId] = functionString;
@@ -81,10 +92,23 @@ function updatePinTime(draft: Project, instruction: InstructionTypes['updatePinT
         const signal = draft.signalData[signalId] as ContinuousSignal | DiscreteSignal;
         if (signal.pinIds.includes(pinId)) {
             signal.pinTimes[pinId] = pinTime;
+            
+            // reorder pinIds
+            const pinIds = signal.pinIds;
+            const index = pinIds.indexOf(pinId);
+            pinIds.splice(index, 1);
+            let newIndex = pinIds.findIndex(id => signal.pinTimes[id] as number >= pinTime);
+            if (newIndex === -1) newIndex = pinIds.length;
+            pinIds.splice(newIndex, 0, pinId);
+
             found = true;
             break;
         }
     }
+
+
+
+
     if (!found) throw new Error(`Pin with id ${pinId} not found`);
 }
 
@@ -104,6 +128,16 @@ function updatePins(draft: Project, instruction: InstructionTypes['updatePins'])
         }
         signal.pinTimes[pinId] = pinTime;
         signal.pinValues[pinId] = pinValue;
+
+        // reorder pinIds
+        const pinIds = signal.pinIds;
+        const index = pinIds.indexOf(pinId);
+        pinIds.splice(index, 1);
+        let newIndex = pinIds.findIndex(id => signal.pinTimes[id] as number >= pinTime);
+        if (newIndex === -1) newIndex = pinIds.length;
+        pinIds.splice(newIndex, 0, pinId);
+
+
         if (signal.type === 'continuous') signal.curves[pinId] = functionString;
     }
 }
@@ -266,6 +300,24 @@ function updateFocusRange(draft: Project, instruction: InstructionTypes['updateF
     draft.timelineData.focusRange = focusRange;
 }
 
+function addCurveTemplate(draft: Project, instruction: InstructionTypes['addCurveTemplate']) {
+    const { curveId, functionString } = instruction;
+    if (draft.templateData[curveId]) throw new Error(`Curve template with id ${curveId} already exists`);
+    draft.templateData[curveId] = functionString;
+}
+
+function deleteCurveTemplate(draft: Project, instruction: InstructionTypes['deleteCurveTemplate']) {
+    const { curveId } = instruction;
+    if (!draft.templateData[curveId]) throw new Error(`Curve template with id ${curveId} not found`);
+    delete draft.templateData[curveId];
+}
+
+function updateCurveTemplate(draft: Project, instruction: InstructionTypes['updateCurveTemplate']) {
+    const { curveId, functionString } = instruction;
+    if (!draft.templateData[curveId]) throw new Error(`Curve template with id ${curveId} not found`);
+    draft.templateData[curveId] = functionString;
+}
+
 export {
     addPin,
     deletePin,
@@ -284,5 +336,8 @@ export {
     updateProjectName,
     generateId,
     updatePins,
-    updateFocusRange
+    updateFocusRange,
+    addCurveTemplate,
+    deleteCurveTemplate,
+    updateCurveTemplate,
 }

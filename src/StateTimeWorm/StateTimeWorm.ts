@@ -122,6 +122,15 @@ class StateTimeWormClass<Object,Instruction> implements StateTimeWorm<Object,Ins
         this.__internal.namedStates[namedState] = this.__internal.cursor;
     }
 
+    appendToCurrentState(forward: Instruction[],backward: Instruction[]): void {
+        this.content = this.__transformer(this.content, forward);
+        const currentState = this.__internal.cursor;
+        const existingForward = this.__internal.states[currentState].forward;
+        const existingBackward = this.__internal.states[currentState].backward;
+        this.__internal.states[currentState].forward = existingForward.concat(forward);
+        this.__internal.states[currentState].backward = backward.concat(existingBackward);
+    }
+
     addNextState(forward: Instruction[], backward: Instruction[]): void {
         // 1. delete all states after the current state
         // 2. add a new state after the current state and move cursor
@@ -215,6 +224,9 @@ class StateTimeWormClass<Object,Instruction> implements StateTimeWorm<Object,Ins
                 break;
             case 'addNextState':
                 this.addNextState(command.forward, command.backward);
+                break;
+            case 'appendToCurrentState':
+                this.appendToCurrentState(command.forward, command.backward);
                 break;
             default:
                 throw new Error('Invalid command');

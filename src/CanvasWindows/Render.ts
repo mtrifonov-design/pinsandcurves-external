@@ -3,27 +3,63 @@ import Box from "./Box";
 import { Vec2, BoundingBox } from "./types";
 import { boxesIntersect } from "./Utils";
 
-function render(camera: Box, windows: CanvasWindow[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+
+const cachedLayers : {
+    [key: string]: HTMLCanvasElement;
+} = {
+};
+
+
+function render(camera: Box, windows: CanvasWindow[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, taintedLayers: number[]) {
     // Check which windows intersect with the camera
     // console.log(camera)
     camera = new Box([...camera.o],camera.w,camera.h);
     const cameraBoundingBox = camera.getBoundingBox();
-    const intersectingWindows = windows.filter(w => {return boxesIntersect(w.getBoundingBox() as BoundingBox, cameraBoundingBox as BoundingBox)});
+    const intersectingWindows = windows.filter(w => {return w._renderAlways || boxesIntersect(w.getBoundingBox() as BoundingBox, cameraBoundingBox as BoundingBox)});
     // console.log(intersectingWindows)
     // intersectingWindows.sort((a, b) => a.getLayer() - b.getLayer());
 
     const layers = Array.from(new Set(intersectingWindows.map(w => w.getLayer()))).sort((a, b) => a - b);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (let i = 0; i < layers.length; i++) {
+        const layerNumber = layers[i];
         const layer = intersectingWindows.filter(w => w.getLayer() === layers[i]);
-        const layerCanvas = document.createElement('canvas');
-        layerCanvas.width = canvas.width;
-        layerCanvas.height = canvas.height;
-        const layerCtx = layerCanvas.getContext('2d') as CanvasRenderingContext2D;
-        for (let w of layer) {
-            w.renderPrimitive(layerCtx);
+        if (taintedLayers.includes(layerNumber)) {
+            const layerKey = layerNumber+"";
+            if (cachedLayers[layerKey] === undefined) {
+                const layerCanvas = document.createElement('canvas');
+                layerCanvas.width = canvas.width;
+                layerCanvas.height = canvas.height;
+                cachedLayers[layerKey] = layerCanvas;
+            }
+            const layerCanvas = cachedLayers[layerKey];
+            const layerCtx = layerCanvas.getContext('2d') as CanvasRenderingContext2D;
+            layerCtx.clearRect(0, 0, layerCanvas.width, layerCanvas.height);
+            for (let w of layer) {
+                // console.log("updating layer"+layerNumber)
+                w.renderPrimitive(layerCtx);
+            }
         }
-        ctx.drawImage(layerCanvas, 0, 0);
+        const layerKey = layerNumber+"";
+        // console.log(cachedLayers)
+        if (cachedLayers[layerKey]) {
+            // console.log("me")
+            // console.log(cachedLayers[layerKey].width)
+            ctx.drawImage(cachedLayers[layerKey], 0, 0);
+        }
+
+
+        
+
+        // ctx.save();
+        // for (let w of layer) {
+        //     w.renderPrimitive(ctx);
+        // }
+        // ctx.restore();
+        // ctx.drawImage(layerCanvas, 0, 0);
     }
+    // console.log(cachedLayers)
 }
 
 function clickHandler(camera: Box, windows: CanvasWindow[], canvas: HTMLCanvasElement, mousePos: [number, number], e: MouseEvent) {

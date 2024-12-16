@@ -2,6 +2,10 @@ import { Box, RenderProps } from "../CanvasWindows";
 import SignalWindow, { ExtendedRenderProps} from "./SignalWindow";
 import { Mode } from "./Scene/UIElements/modeMenu";
 
+function generateId() {
+    return Math.random();
+}
+
 class ImageClass extends SignalWindow {
 
     windowDidMount(props: { [key: string]: any; }): void {
@@ -11,8 +15,12 @@ class ImageClass extends SignalWindow {
         }
     }
 
+
     getBox() {
-        return new Box([this.props.x, this.props.y], this.props.w, this.props.h);
+        const w = this.props.w === undefined ? (this.img ? this.img?.width : 0) : this.props.w;
+        const h = this.props.h === undefined ? (this.img ? this.img?.height : 0) : this.props.h;
+        // console.log(this.props,this.img?.width,this.img?.height)
+        return new Box([this.props.x, this.props.y], w, h);
     }
 
     _img: HTMLImageElement | null = null;
@@ -22,6 +30,7 @@ class ImageClass extends SignalWindow {
             newImg.src = this.props.src;
             newImg.onload = () => {
                 this._img = newImg;
+                this.setState({seed:generateId()})
             }
             return newImg;
         }
@@ -37,7 +46,7 @@ class ImageClass extends SignalWindow {
         const [aox,aoy] = r.absoluteO;
         const [aux,auy] = this.absoluteUnit;
         r.ctx.translate(aox,aoy);
-        r.ctx.drawImage(this.img,0,0,this.props.w * aux,this.props.h * auy);
+        r.ctx.drawImage(this.img,0,0,this.w * aux,this.h * auy);
         r.ctx.restore();
     }
 }
@@ -46,14 +55,14 @@ function ImageNode(
     src: string,
     x: number = 0,
     y: number = 0,
-    w: number = 500,
-    h: number = 500,
     options? : {
         layer?: number;
         modes?: Mode[];
+        w?: number,
+        h?: number,
     }
 ) {
-    return ImageClass.Node({src,x,y,w,h,...options});
+    return ImageClass.Node({src,x,y,...options});
 }
 
 export default ImageNode;
