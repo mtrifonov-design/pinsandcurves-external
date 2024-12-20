@@ -3,13 +3,20 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/mtrifonov-design"
   },
-  "version": "0.0.199",
+  "version": "0.0.205",
   "description": "",
   "exports": {
     ".": {
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js",
-      "types": "./dist/types/types.d.ts"
+      "types": "./dist/types/types.d.ts",
+      "interpolateSignalValueWorker": "./dist/worker/interpolateSignalValueWorker.js"
+    },
+    "./InterpolateSignalValue": {
+      "import": "./dist/InterpolateSignalValue/esm/index.js",
+      "require": "./dist/InterpolateSignalValue/cjs/index.js",
+      "types": "./dist/InterpolateSignalValue/types/types.d.ts",
+      "worker": "./dist/InterpolateSignalValue/worker/interpolateSignalValueWorker.js"
     },
     "./CanvasWindows": {
       "import": "./dist/CanvasWindows/esm/index.js",

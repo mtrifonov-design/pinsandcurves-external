@@ -33,6 +33,52 @@ export default [
     // external: ["react", "react-dom"],
   },
   {
+    input: "src/InterpolateSignalValue/index.ts",
+    output: [
+      {
+        file: packageJson.exports["./InterpolateSignalValue"].require,
+        format: "cjs",
+        sourcemap: true,
+      },
+      {
+        file: packageJson.exports["./InterpolateSignalValue"].import,
+        format: "esm",
+        sourcemap: true,
+      },
+    ],
+    plugins: [
+      peerDepsExternal(),
+      resolve(),
+      commonjs(),
+      typescript({ tsconfig: "./tsconfig.json" }),
+      terser(),
+    ],
+    // external: ["react", "react-dom"],
+  },
+  {
+    input: "src/InterpolateSignalValue/BatchWorker.ts",
+    output: [
+      {
+        file: packageJson.exports["./InterpolateSignalValue"].worker,
+        format: "cjs",
+        sourcemap: true,
+      },
+      {
+        file: packageJson.exports["."].interpolateSignalValueWorker,
+        format: "cjs",
+        sourcemap: true,
+      },
+    ],
+    plugins: [
+      peerDepsExternal(),
+      resolve(),
+      commonjs(),
+      typescript({ tsconfig: "./tsconfig.json" }),
+      terser(),
+    ],
+    // external: ["react", "react-dom"],
+  },
+  {
     input: "src/CanvasWindows/index.ts",
     output: [
       {
@@ -53,7 +99,6 @@ export default [
       typescript({ tsconfig: "./tsconfig.json" }),
       terser(),
     ],
-    // external: ["react", "react-dom"],
   },
   {
     input: "src/index.ts",
@@ -68,6 +113,15 @@ export default [
     input: "src/CanvasWindows/index.ts",
     output: [{ 
       file: packageJson.exports["./CanvasWindows"].types,
+      format: "es",
+      sourcemap: true,
+    }],
+    plugins: [dts.default()],
+  },
+  {
+    input: "src/InterpolateSignalValue/index.ts",
+    output: [{ 
+      file: packageJson.exports["./InterpolateSignalValue"].types,
       format: "es",
       sourcemap: true,
     }],
