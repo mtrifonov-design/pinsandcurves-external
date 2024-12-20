@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <svg id="svgcanvas" width="500" height="500" xmlns="http://www.w3.org/2000/svg">
+        <g id="circle">
+            <ellipse cx="50" cy="50" rx="40" ry="80" stroke="black" stroke-width="3" fill="green" />
+            <circle cx="150" cy="50" r="40" stroke="black" stroke-width="3" fill="red" />
+        </g>
+    </svg>
+    
+    <button id="renderButton" style="
+        margin-top: 20px;
+        margin-left: 20px;
+        position: absolute;
+        top: 0;
+        left: 0;
+    ">Render</button>
+    
+    <script src="./main.ts" type="module"></script>
+</body>
+</html>

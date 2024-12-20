@@ -1,5 +1,5 @@
 import { PinsAndCurvesProjectInstructionTypes, PinsAndCurvesProject } from "./types";
-import { ContinuousSignal, DiscreteSignal } from "../ProjectDataStructure";
+import { ContinuousBezierSignal, ContinuousSignal, DiscreteSignal, Signal } from "../ProjectDataStructure";
 
 const generateId = (): string => {
     let id = "";
@@ -16,7 +16,7 @@ type InstructionTypes = PinsAndCurvesProjectInstructionTypes;
 
 
 function addPin(draft: Project, instruction: InstructionTypes['addPin']) {
-    const { signalId, pinId, pinTime, pinValue, functionString } = instruction;
+    const { signalId, pinId, pinTime, pinValue, functionString, bezierControlPoints } = instruction;
     const signal = draft.signalData[signalId];
     if (!signal) throw new Error(`Signal with id ${signalId} not found`);
     const signalType = signal.type;
@@ -37,6 +37,13 @@ function addPin(draft: Project, instruction: InstructionTypes['addPin']) {
         const [min, max] = signal.range;
         if (pinValue as number < min || pinValue as number > max) throw new Error(`Pin value must be between ${min} and ${max}`);
         if (!functionString) throw new Error(`Curve is required for continuous signals`);
+    
+        if ("bezier" in signal) {
+            if (!signal.bezierControlPoints) throw new Error(`Bezier control points are required for continuous bezier signals`);
+            if (!bezierControlPoints) throw new Error(`Bezier control points are required for continuous bezier signals`);
+            signal.bezierControlPoints[pinId] = bezierControlPoints;
+        }
+    
     }
 
     
@@ -63,13 +70,19 @@ function deletePin(draft: Project, instruction: InstructionTypes['deletePin']) {
     // console.log(pinId);
     let found = false;
     for (const signalId in draft.signalData) {
-        const signal = draft.signalData[signalId] as ContinuousSignal | DiscreteSignal;
+        const signal = draft.signalData[signalId] as ContinuousSignal | DiscreteSignal | ContinuousBezierSignal;
         const index = signal.pinIds.indexOf(pinId);
         if (index !== -1) {
             signal.pinIds.splice(index, 1);
             delete signal.pinTimes[pinId];
             delete signal.pinValues[pinId];
-            if (signal.type === 'continuous') delete signal.curves[pinId];
+            if (signal.type === 'continuous') {
+                delete signal.curves[pinId];
+                if ("bezier" in signal) {
+                    delete signal.bezierControlPoints[pinId];
+                }
+            }
+
             found = true;
             break;
         }
@@ -142,7 +155,29 @@ function updatePins(draft: Project, instruction: InstructionTypes['updatePins'])
     }
 }
 
+function updatePinBezierControlPoints(draft: Project, instruction: InstructionTypes['updatePinBezierControlPoints']) {
+    const { pinId, bezierControlPoints } = instruction;
+    const signalId = draft.orgData.signalIdByPinId[pinId];
+    if (!signalId) throw new Error(`Pin with id ${pinId} not found`);
+    const signal = draft.signalData[signalId] as ContinuousBezierSignal;
+    signal.bezierControlPoints[pinId] = bezierControlPoints;
+}
 
+function updateSignalDefaultValue(draft: Project, instruction: InstructionTypes['updateSignalDefaultValue']) {
+    const { signalId, defaultValue } = instruction;
+    if (!draft.signalData[signalId]) throw new Error(`Signal with id ${signalId} not found`);
+    const signal = draft.signalData[signalId] as ContinuousSignal | DiscreteSignal;
+    if (signal.type === 'continuous' && typeof defaultValue !== 'number') throw new Error(`Default value must be a number for continuous signals`);
+    if (signal.type === 'discrete' && typeof defaultValue !== 'string') throw new Error(`Default value must be a string for discrete signals`);
+    signal.defaultValue = defaultValue;
+}
+
+function updateSignalDefaultCurve(draft: Project, instruction: InstructionTypes['updateSignalDefaultCurve']) {
+    const { signalId, defaultCurve } = instruction;
+    if (!draft.signalData[signalId]) throw new Error(`Signal with id ${signalId} not found`);
+    const signal = draft.signalData[signalId] as ContinuousSignal | ContinuousBezierSignal;
+    signal.defaultCurve = defaultCurve;
+}
 
 function updatePinValue(draft: Project, instruction: InstructionTypes['updatePinValue']) {
     const { pinId, pinValue } = instruction;
@@ -181,7 +216,9 @@ function updateCurve(draft: Project, instruction: InstructionTypes['updateCurve'
 }
 
 function createSignal(draft: Project, instruction: InstructionTypes['createSignal']) {
-    const { signalId, signalType, signalName, range } = instruction;
+    const { signalId, signalType, signalName, range,
+        defaultValue, displayValues, isStatic, bezier, defaultCurve
+    } = instruction;
     if (draft.signalData[signalId]) throw new Error(`Signal with id ${signalId} already exists`);
     if (signalType !== 'continuous' && signalType !== 'discrete') throw new Error(`Signal type must be continuous or discrete`);
     let signal;
@@ -189,21 +226,51 @@ function createSignal(draft: Project, instruction: InstructionTypes['createSigna
         if (!range) throw new Error(`Range is required for continuous signals`);
         const [min, max] = range;
         if (min >= max) throw new Error(`Min value must be less than max value`);
-        signal = {
-            id: signalId,
-            type: signalType,
-            range,
-            pinIds: [],
-            pinTimes: {},
-            pinValues: {},
-            curves: {},
+        if (typeof defaultValue !== 'number') throw new Error(`Default value must be a number for continuous signals`);
+        if (!defaultCurve) throw new Error(`Default curve is required for continuous signals`);
+
+        if (bezier) {
+
+            signal= {
+                id: signalId,
+                type: signalType,
+                range,
+                defaultValue,
+                isStatic,
+                bezier: true,
+                bezierControlPoints: {},
+                defaultCurve,
+                pinIds: [],
+                pinTimes: {},
+                pinValues: {},
+                curves: {},
+            } as ContinuousBezierSignal;
+        } else {
+            signal = {
+                id: signalId,
+                type: signalType,
+                range,
+                defaultValue,
+                isStatic,
+                defaultCurve,
+                pinIds: [],
+                pinTimes: {},
+                pinValues: {},
+                curves: {},
+            } as ContinuousSignal;
         }
+
     }
     if (signalType === 'discrete') {
+        if (typeof defaultValue !== 'string') throw new Error(`Default value must be a string for discrete signals`);
+        
         signal = {
             id: signalId,
             type: signalType,
             pinIds: [],
+            defaultValue,
+            displayValues,
+            isStatic,
             pinTimes: {},
             pinValues: {},
         }
@@ -218,10 +285,16 @@ function createSignal(draft: Project, instruction: InstructionTypes['createSigna
 function deleteSignal(draft: Project, instruction: InstructionTypes['deleteSignal']) {
     const { signalId } = instruction;
     if (!draft.signalData[signalId]) throw new Error(`Signal with id ${signalId} not found`);
+    const pinIds = (draft.signalData[signalId] as Signal).pinIds;
+    pinIds.forEach(pinId => delete draft.orgData.signalIdByPinId[pinId]);
+    pinIds.forEach(pinId => draft.orgData.pinIds = draft.orgData.pinIds.filter(id => id !== pinId));
+
     delete draft.signalData[signalId];
     draft.orgData.signalIds = draft.orgData.signalIds.filter(id => id !== signalId);
     delete draft.orgData.signalNames[signalId];
     draft.orgData.activeSignalIds = draft.orgData.activeSignalIds.filter(id => id !== signalId);
+    delete draft.orgData.signalTypes[signalId];
+
 }
 
 function updateSignalName(draft: Project, instruction: InstructionTypes['updateSignalName']) {
@@ -340,4 +413,7 @@ export {
     addCurveTemplate,
     deleteCurveTemplate,
     updateCurveTemplate,
+    updatePinBezierControlPoints,
+    updateSignalDefaultValue,
+    updateSignalDefaultCurve
 }

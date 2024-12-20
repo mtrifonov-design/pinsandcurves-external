@@ -31,10 +31,11 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
     const signalData = project.signalData;
     const signal = signalData[signalId] as ContinuousSignal;
     const [min,max] = signal.range;
+    const defaultValue = signal.defaultValue;
     const sortedPinTimes = Object.entries(signal.pinTimes).sort((a,b) => a[1] as number - (b[1] as number));
     const nextPin = sortedPinTimes.find(([pinId, pinTime]) => pinTime as number >= frame);
     if (nextPin === undefined) {
-        return [min,[]];
+        return [defaultValue,[]];
     }
     const [nextPinId, nextPinTime] = nextPin as [string,number];
     const nextPinValue = signal.pinValues[nextPinId] as number;
@@ -47,6 +48,10 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
         const [previousPinId, previousPinTime_] = sortedPinTimes[previousPinIdx - 1];
         previousPinValue = signal.pinValues[previousPinId] as number;
         previousPinTime = previousPinTime_ as number;
+    } else {
+        if (frame < nextPinTime) {
+        return [defaultValue,[]];
+        }
     }
 
     let interpolationFunction;
@@ -63,6 +68,9 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
             let framesPerSecond = context.framesPerSecond;
 
             let interpolateSignalValue = context.interpolateSignalValue;
+            let signal = context.signal;
+
+            let bezier = context.bezier;
 
             let easyLinear = context.easyLinear;
             let easyEaseIn = context.easyEaseIn;
@@ -86,7 +94,7 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
     const timeDelta = nextPinTime !== previousPinTime ? nextPinTime - previousPinTime : 1;
     const relativeTime = (frame - previousPinTime) / timeDelta;
 
-    let value = min;
+    let value = defaultValue;
     let errorLog = [];
     try {
         const context = getContext({
@@ -95,6 +103,7 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
             previousPinTime,
             project,
             previousPinValue,
+            defaultValue,
             relativeTime,
             pinId: nextPinId,
             frame,
@@ -127,7 +136,7 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
 
 
     if (isNaN(value)) {
-        value = min;
+        value = defaultValue;
         errorLog.push(
             {
                 signalId,
@@ -167,10 +176,11 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
 const interpolateDiscreteSignalValue = (project: Project, signalId : string, frame : number, errorMessages : string[] = []) : string => {
     const signalData = project.signalData;
     const signal = signalData[signalId] as DiscreteSignal;
+    const defaultValue = signal.defaultValue;
     const sortedPinTimes = Object.entries(signal.pinTimes).sort((a,b) => a[1] as number - (b[1] as number));
     const nextPin = sortedPinTimes.find(([pinId, pinTime]) => pinTime as number >= frame);
     if (nextPin === undefined) {
-        return "END VALUE";
+        return defaultValue;
     }
     const [nextPinId, nextPinTime] = nextPin;
     const value = signal.pinValues[nextPinId] as string;

@@ -37,6 +37,11 @@ const transformers : Transformers = {
     updateCurveTemplate : t.updateCurveTemplate,
     addCurveTemplate : t.addCurveTemplate,
     deleteCurveTemplate : t.deleteCurveTemplate,
+    updatePinBezierControlPoints : t.updatePinBezierControlPoints,
+    updateSignalDefaultValue : t.updateSignalDefaultValue,
+    updateSignalDefaultCurve : t.updateSignalDefaultCurve
+
+
 
   };
 

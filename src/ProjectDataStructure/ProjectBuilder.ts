@@ -15,9 +15,47 @@ function generateId() {
     return Math.random().toString(36).substring(7);
 }
 
+function clamp(value: number, min: number, max: number) {
+    return Math.max(min, Math.min(max, value));
+}
+
 class ProjectBuilder {
     _project : PinsAndCurvesProject = emptyProject();
     constructor() {};
+    addStaticStringSignal(signalId: string, signalName: string, staticValue: string) {
+        this._project.orgData.signalIds.push(signalId);
+        this._project.orgData.signalNames[signalId] = signalName;
+        this._project.orgData.signalTypes[signalId] = 'discrete';
+        this._project.signalData[signalId] = {
+            id: signalId,
+            type: 'discrete',
+            pinIds: [],
+            pinTimes: {},
+            pinValues: {},
+            defaultValue: staticValue,
+            isStatic: true,
+        };
+    }
+
+    addStaticNumberSignal(signalId: string, signalName: string, range:[number,number], staticValue: number) {
+        this._project.orgData.signalIds.push(signalId);
+        this._project.orgData.signalNames[signalId] = signalName;
+        this._project.orgData.signalTypes[signalId] = 'continuous';
+        this._project.signalData[signalId] = {
+            id: signalId,
+            type: 'continuous',
+            pinIds: [],
+            pinTimes: {},
+            pinValues: {},
+            defaultValue: staticValue,
+            isStatic: true,
+            range,
+            defaultCurve: 'return easyLinear();',
+            curves: {},
+        };
+    }
+
+
     addDiscreteSignal(signalId: string, signalName: string)  {
         this._project.orgData.signalIds.push(signalId);
         this._project.orgData.signalNames[signalId] = signalName;
@@ -28,6 +66,9 @@ class ProjectBuilder {
             pinIds: [],
             pinTimes: {},
             pinValues: {},
+            defaultValue: 'default value',
+            displayValues: true,
+            
         };
     }
     addContinuousSignal(signalId: string, signalName: string, range: [number,number]) {
@@ -42,6 +83,26 @@ class ProjectBuilder {
             pinTimes: {},
             pinValues: {},
             curves: {},
+            defaultCurve: 'return easyLinear();',
+            defaultValue: range[0],
+        };
+    }
+    addContinuousBezierSignal(signalId: string, signalName: string, range: [number,number]) {
+        this._project.orgData.signalIds.push(signalId);
+        this._project.orgData.signalNames[signalId] = signalName;
+        this._project.orgData.signalTypes[signalId] = 'continuous';
+        this._project.signalData[signalId] = {
+            id: signalId,
+            type: 'continuous',
+            range: range,
+            pinIds: [],
+            pinTimes: {},
+            pinValues: {},
+            curves: {},
+            defaultCurve: 'return bezier();',
+            defaultValue: range[0],
+            bezierControlPoints: {},
+            bezier: true,
         };
     }
     addPin(signalId: string, pinTime: number, pinValue: number | string, curve?: string) {
@@ -54,10 +115,23 @@ class ProjectBuilder {
             signal.pinTimes[pinId] = pinTime;
             if (typeof pinValue !== 'number') throw new Error('Continuous signal pin value must be a number');
             signal.pinValues[pinId] = pinValue as number;
-            if (!curve) throw new Error('Continuous signal pin must have a curve');
             if (curve) {
                 signal.curves[pinId] = curve;
+            } else {
+                const defaultCurve = signal.defaultCurve;
+                signal.curves[pinId] = defaultCurve;
             }
+
+            if ("bezier" in signal) {
+                const numberOfFrames = this._project.timelineData.numberOfFrames;
+                const time1 = -5
+                const time2 = 5
+                const value1 = 0;
+                const value2 = 0;
+                signal.bezierControlPoints[pinId] = [time1,value1,time2,value2];
+            }
+
+
         }
         if (signal.type === 'discrete') {
             signal.pinIds.push(pinId);

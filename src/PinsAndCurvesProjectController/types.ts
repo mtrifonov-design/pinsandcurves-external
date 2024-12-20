@@ -25,6 +25,7 @@ type PinUpdateQueue = ({
     pinTime?: number;
     pinValue?: number;
     functionString?: string;
+    bezierControlPoints?: [number, number, number, number];
 })[]
 
 interface ProjectTools {
@@ -34,7 +35,17 @@ interface ProjectTools {
     deletePins: (pinIds: string[]) => void;
     updatePins: (pinUpdateQueue: PinUpdateQueue, commit? :boolean) => void;
     updateCurve: (pinId: string, functionString: string) => void;
-    createSignal: (signalId: string, signalType: 'continuous' | 'discrete', signalName: string, range?: [number, number]) => void;
+    updatePinBezierControlPoints: (pinId: string, bezierControlPoints: [number, number, number, number],commit?: boolean) =>  void;
+    
+    // createSignal: (signalId: string, signalType: 'continuous' | 'discrete', signalName: string, range?: [number, number]) => void;
+
+    createDiscreteSignal: (signalId: string, signalName: string, defaultValue: string, isStatic?: true) => void;
+    createContinuousSignal: (signalId: string, signalName: string, range: [number, number], defaultValue: number, defaultCurve: string, isStatic?: true) => void;
+    createContinuousBezierSignal: (signalId: string, signalName: string, range: [number, number], defaultValue: number, defaultCurve: string, isStatic?: true) => void;
+
+    updateSignalDefaultValue: (signalId: string, defaultValue: number | string) => void;
+
+
     duplicateSignal: (signalId: string) => void;
     deleteSignal: (signalId: string) => void;
     updateSignalName: (signalId: string, signalName: string) => void;

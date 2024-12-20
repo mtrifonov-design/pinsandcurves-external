@@ -11,6 +11,7 @@ type InterpolationFunctionContext = {
     framesPerSecond: number,
     maxValue: number,
     minValue: number,
+    defaultValue: number,
     pinId: string,
     project: Project,
 
@@ -27,8 +28,10 @@ type InterpolationFunctionContext = {
     easyEaseOut: () => number,
     easyEase: () => number,
     easyEaseOutElastic: () => number,
+    bezier: () => number,
 
     interpolateSignalValueAtTime: (signalId: string, frame: number) => number,
+    signal: (signalId: string) => number,
 
 };
 

@@ -21,8 +21,32 @@ const configB = defineConfig({
     },
 });
 
+const configC = defineConfig({
+    root: "./src/PinsAndCurvesSVGHost/demo/src",
+    server: {
+        port: 5000,
+    },
+    build: {
+        outDir: "./src/PinsAndCurvesSVGHost/demo/dist",
+    },
+});
+
 export default defineConfig(({ mode }) => {
     // Use the mode or environment variable to select the configuration
-    const selectedConfig = mode === "serverB" ? configB : configA;
+    let selectedConfig;
+    switch (mode) {
+        case "serverA":
+            selectedConfig = configA;
+            break;
+        case "serverB":
+            selectedConfig = configB;
+            break;
+        case "serverC":
+            selectedConfig = configC;
+            break;
+        default:
+            selectedConfig = configA;
+    }
+
     return selectedConfig;
 });

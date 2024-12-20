@@ -1,31 +1,14 @@
 import { PinsAndCurvesProjectInstruction } from '../PinsAndCurvesProjectTransformer';
-import { ContinuousSignal, DiscreteSignal, Signal } from '../ProjectDataStructure';
+import { ContinuousSignal, ContinuousBezierSignal, DiscreteSignal, Signal } from '../ProjectDataStructure';
 import { ProjectTools, WormCommand, Instruction, Project, PinUpdateQueue } from './types'
-
-// interface ProjectTools {
-//     addPin: (signalId: string, pinId: string, pinTime: number, pinValue: number | string, commit?: boolean) => void;
-//     deletePin: (pinId: string) => void;
-//     updatePinTime: (pinId: string, pinTime: number, commit?: boolean) => void;
-//     updatePinValue: (pinId: string, pinValue: number | string, commit?: boolean) => void;
-//     updateCurve: (pinId: string, functionString: string) => void;
-//     createSignal: (signalId: string, signalType: 'continuous' | 'discrete', signalName: string, range?: [number, number]) => void;
-//     deleteSignal: (signalId: string) => void;
-//     updateSignalName: (signalId: string, signalName: string) => void;
-//     updateSignalRange: (signalId: string, range: [number, number]) => void;
-//     updateSignalIndex: (signalId: string, index: number, commit?: boolean) => void;
-//     updateSignalActiveStatus: (signalId: string, active: boolean) => void;
-//     updateFramesPerSecond: (framesPerSecond: number) => void;
-//     updatePlayheadPosition: (playheadPosition: number, commit?: boolean) => void;
-//     updateNumberOfFrames: (numberOfFrames: number) => void;
-//     updateProjectName: (projectName: string) => void;
-//     undo: () => void;
-//     redo: () => void;
-// }
 
 function generateId() : string {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
+function clamp(value: number, min: number, max: number) : number {
+    return Math.min(Math.max(value, min), max);
+}
 
 const commitCommand : WormCommand = {
     type: 'saveAsNamedState',
@@ -37,45 +20,25 @@ const returnToCommitCommand : WormCommand = {
     namedState: 'commit'
 }
 
-function __addPinInstruction(signalId: string, pinId: string, pinTime: number, pinValue: number | string, functionString?: string) : Instruction {
+function __addPinInstruction(project: Project, signalId: string, pinId: string, pinTime: number, pinValue: number | string, functionString?: string, bezierControlPoints? : [number,number,number,number]) : Instruction {
+    if (functionString && !bezierControlPoints) {
+        const { numberOfFrames } = project.timelineData;
+        const handle1time = -5
+        const handle2time = 5
+        const handle1value = 0 as number;
+        const handle2value = 0 as number;
+        bezierControlPoints = [handle1time, handle1value, handle2time, handle2value];
+    }
+
     return {
         type: 'addPin',
         signalId,
         pinId,
         pinTime,
         pinValue,
-        functionString
-    }
-}
-
-function __addPinContinuousCommand(signalId: string, pinId: string, pinTime: number, pinValue: number, functionString: string) : WormCommand {
-    return {
-        type: 'addNextState',
-        forward: [
-            __addPinInstruction(signalId, pinId, pinTime, pinValue, functionString)
-        ],
-        backward: [
-            {
-                type: 'deletePin',
-                pinId
-            }
-        ]
-    }
-}
-
-function __addPinDiscreteCommand(signalId: string, pinId: string, pinTime: number, pinValue: string) : WormCommand {
-    return {
-        type: 'addNextState',
-        forward: [
-            __addPinInstruction(signalId, pinId, pinTime, pinValue)
-        ],
-        backward: [
-            {
-                type: 'deletePin',
-                pinId
-            }
-        ]
-    }
+        functionString,
+        bezierControlPoints
+    } as Instruction
 }
 
 function __deletePinCommand(getProject: () => Project, pinId: string) : WormCommand {
@@ -86,6 +49,7 @@ function __deletePinCommand(getProject: () => Project, pinId: string) : WormComm
     const pinTime = (project.signalData[signalId] as Signal).pinTimes[pinId] as number;
     const pinValue = (project.signalData[signalId] as Signal).pinValues[pinId] as number | string;
     const functionString = signalType === 'continuous' ? (project.signalData[signalId] as ContinuousSignal).curves[pinId] : undefined;
+    const bezierControlPoints = signalType === 'continuous' ? (project.signalData[signalId] as ContinuousBezierSignal).bezierControlPoints[pinId] : undefined;
     return {
     type: 'addNextState',
     forward: [
@@ -95,19 +59,9 @@ function __deletePinCommand(getProject: () => Project, pinId: string) : WormComm
         }
     ],
     backward: [
-        __addPinInstruction(signalId, pinId, pinTime, pinValue, functionString)
+        __addPinInstruction(project, signalId, pinId, pinTime, pinValue, functionString, bezierControlPoints)
     ]
     }
-}
-
-function __idleCommand() : WormCommand {
-    return {
-        type: 'addNextState',
-        forward: [
-        ],
-        backward: [
-        ]
-        }
 }
 
 
@@ -124,7 +78,6 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
     return {
         returnToLastCommit() : void {
             returnToCommit()
-            // pushUpdate()
         },
         pushUpdate,
         addPinContinuous(signalId: string, pinId: string, pinTime: number, pinValue: number, functionString: string, commit?: boolean) : void {
@@ -142,7 +95,7 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                         pinId: signal.pinIds[existingPinIdIdx]
                     });
                 }
-                forwardInstructions.push(__addPinInstruction(signalId, pinId, pinTime, pinValue, functionString));
+                forwardInstructions.push(__addPinInstruction(project, signalId, pinId, pinTime, pinValue, functionString));
                 const backwardInstructions : Instruction[] = [];
                 backwardInstructions.push({
                     type: 'deletePin',
@@ -150,7 +103,7 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                 });
                 if (existingPinIdIdx !== -1) {
                     const existingPinId = signal.pinIds[existingPinIdIdx] as string;
-                    backwardInstructions.push(__addPinInstruction(signalId, existingPinId, signal.pinTimes[existingPinId] as number, signal.pinValues[existingPinId] as number, signal.curves[existingPinId] as string));
+                    backwardInstructions.push(__addPinInstruction(project, signalId, existingPinId, signal.pinTimes[existingPinId] as number, signal.pinValues[existingPinId] as number, signal.curves[existingPinId] as string));
                 }
                 return {
                     type: 'addNextState',
@@ -158,19 +111,6 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                     backward: backwardInstructions
                 }
             });
-            // pushCommand(() => {
-            //     const project = getProject();
-            //     const signal = project.signalData[signalId] as ContinuousSignal;
-            //     const pinTimes = signal.pinTimes;
-            //     const existingPinIdIdx = signal.pinIds.findIndex(existingPinId => pinTimes[existingPinId] === pinTime);
-            //     if (existingPinIdIdx !== -1) {
-            //         return __deletePinCommand(getProject, signal.pinIds[existingPinIdIdx]);
-            //     }
-            //     return __idleCommand()
-            // });
-            // pushCommand(() => {
-            //     return __addPinContinuousCommand(signalId, pinId, pinTime, pinValue, functionString)
-            // })
             if (commit) {pushCommit(),pushUpdate()}
         },
         addPinDiscrete(signalId: string, pinId: string, pinTime: number, pinValue: string, commit?: boolean) : void {
@@ -187,7 +127,7 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                         pinId: signal.pinIds[existingPinIdIdx]
                     });
                 }
-                forwardInstructions.push(__addPinInstruction(signalId, pinId, pinTime, pinValue));
+                forwardInstructions.push(__addPinInstruction(project, signalId, pinId, pinTime, pinValue));
                 const backwardInstructions : Instruction[] = [];
                 backwardInstructions.push({
                     type: 'deletePin',
@@ -195,7 +135,7 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                 });
                 if (existingPinIdIdx !== -1) {
                     const existingPinId = signal.pinIds[existingPinIdIdx] as string;
-                    backwardInstructions.push(__addPinInstruction(signalId, existingPinId, signal.pinTimes[existingPinId] as number, signal.pinValues[existingPinId] as string));
+                    backwardInstructions.push(__addPinInstruction(project, signalId, existingPinId, signal.pinTimes[existingPinId] as number, signal.pinValues[existingPinId] as string));
                 }
                 return {
                     type: 'addNextState',
@@ -203,21 +143,6 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                     backward: backwardInstructions
                 }
             });
-
-
-            // pushCommand(() => {
-            //     const project = getProject();
-            //     const signal = project.signalData[signalId] as ContinuousSignal;
-            //     const pinTimes = signal.pinTimes;
-            //     const existingPinIdIdx = signal.pinIds.findIndex(existingPinId => pinTimes[existingPinId] === pinTime);
-            //     if (existingPinIdIdx !== -1) {
-            //         return __deletePinCommand(getProject, signal.pinIds[existingPinIdIdx]);
-            //     }
-            //     return __idleCommand()
-            // });
-            // pushCommand(() => {
-            //     return __addPinDiscreteCommand(signalId, pinId, pinTime, pinValue)
-            // })
             if (commit) {pushCommit(),pushUpdate()}
         },
         deletePin(pinId: string) : void {
@@ -238,105 +163,7 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
             pushCommit()
             pushUpdate()
         },
-        // updatePins(pinUpdateQueue: PinUpdateQueue, commit?: boolean) : void {
-        //     if (commit) returnToCommit()
-        //     pinUpdateQueue.forEach(pinUpdate => {
-        //         if (pinUpdate.pinType ==='continuous') {
-        //             const {pinId, pinTime, pinValue, functionString} = pinUpdate;
-        //             pushCommand(() => {
-        //                 const project = getProject();
-        //                 const signalId = Object.keys(project.signalData).find(signalId => project.signalData[signalId]?.pinIds.includes(pinId));
-        //                 if (!signalId) throw new Error("Pin not found");
-        //                 const signalType = (project.signalData[signalId] as Signal).type;
-        //                 if (signalType === 'discrete') throw new Error("Cannot update continuous pin of discrete signal");
-        //                 const pinTimes = (project.signalData[signalId] as Signal).pinTimes;
-        //                 const pinValues = (project.signalData[signalId] as Signal).pinValues;
-        //                 const curves = (project.signalData[signalId] as ContinuousSignal).curves;
-        //                 const newPinValue = pinValue ?? pinValues[pinId] as number;
-        //                 const newPinTime = pinTime ?? pinTimes[pinId] as number;
-        //                 const newFunctionString = functionString ?? curves[pinId] as string;
-        //                 return {
-        //                 type: 'addNextState',
-        //                 forward: [
-        //                     {
-        //                         type: 'updatePinValue',
-        //                         pinId,
-        //                         pinValue: newPinValue
-        //                     },
-        //                     {
-        //                         type: 'updatePinTime',
-        //                         pinId,
-        //                         pinTime: newPinTime
-        //                     },
-        //                     {
-        //                         type: 'updateCurve',
-        //                         pinId,
-        //                         functionString: newFunctionString
-        //                     }
-        //                 ],
-        //                 backward: [
-        //                     {
-        //                         type: 'updatePinValue',
-        //                         pinId,
-        //                         pinValue: pinValues[pinId] as number
-        //                     },
-        //                     {
-        //                         type: 'updatePinTime',
-        //                         pinId,
-        //                         pinTime: pinTimes[pinId] as number
-        //                     },
-        //                     {
-        //                         type: 'updateCurve',
-        //                         pinId,
-        //                         functionString: curves[pinId] as string
-        //                     }
-        //                 ]
-        //             }})
-        //         }
-        //         if (pinUpdate.pinType === 'discrete') {
-        //             const {pinId, pinTime, pinValue} = pinUpdate;
-        //             pushCommand(() => {
-        //                 const project = getProject();
-        //                 const signalId = Object.keys(project.signalData).find(signalId => project.signalData[signalId]?.pinIds.includes(pinId));
-        //                 if (!signalId) throw new Error("Pin not found");
-        //                 const signalType = (project.signalData[signalId] as Signal).type;
-        //                 if (signalType === 'continuous') throw new Error("Cannot update discrete pin of continuous signal");
-        //                 const pinTimes = (project.signalData[signalId] as Signal).pinTimes;
-        //                 const pinValues = (project.signalData[signalId] as Signal).pinValues;
-        //                 const newPinValue = pinValue ?? pinValues[pinId] as string;
-        //                 const newPinTime = pinTime ?? pinTimes[pinId] as number;
-        //                 return {
-        //                 type: 'addNextState',
-        //                 forward: [
-        //                     {
-        //                         type: 'updatePinValue',
-        //                         pinId,
-        //                         pinValue: newPinValue
-        //                     },
-        //                     {
-        //                         type: 'updatePinTime',
-        //                         pinId,
-        //                         pinTime: newPinTime
-        //                     }
-        //                 ],
-        //                 backward: [
-        //                     {
-        //                         type: 'updatePinValue',
-        //                         pinId,
-        //                         pinValue: pinValues[pinId] as string
-        //                     },
-        //                     {
-        //                         type: 'updatePinTime',
-        //                         pinId,
-        //                         pinTime: pinTimes[pinId] as number
-        //                     }
-        //                 ]
-        //             }})
-        //         }
-        //     });
-        //     if (commit) {pushCommit()}
-        //     pushUpdate()
-        // },
+        
         updatePins(pinUpdateQueue: PinUpdateQueue, commit?: boolean) : void {
             if (commit) returnToCommit();
             const project = getProject();
@@ -409,7 +236,64 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
             pushCommit()
             pushUpdate()
         },
-        createSignal(signalId: string, signalType: 'continuous' | 'discrete', signalName: string, range?: [number, number]) : void {
+
+        updatePinBezierControlPoints(pinId: string, bezierControlPoints: [number, number, number, number],commit?:boolean) : void {
+            if (commit) returnToCommit()
+            pushCommand(() => {
+                const project = getProject();
+                const signalId = Object.keys(project.signalData).find(signalId => project.signalData[signalId]?.pinIds.includes(pinId));
+                if (!signalId) throw new Error("Pin not found");
+                const signalType = (project.signalData[signalId] as Signal).type;
+                if (signalType === 'discrete') throw new Error("Cannot update bezier control points of discrete signal");
+                if (!("bezier" in (project.signalData[signalId] as ContinuousSignal))) throw new Error("Signal is not a bezier signal")
+                return {
+                type: 'addNextState',
+                forward: [
+                    {
+                        type: 'updatePinBezierControlPoints',
+                        pinId,
+                        bezierControlPoints
+                    }
+                ],
+                backward: [
+                    {
+                        type: 'updatePinBezierControlPoints',
+                        pinId,
+                        bezierControlPoints: (project.signalData[signalId] as ContinuousBezierSignal).bezierControlPoints[pinId] as [number, number, number, number]
+                    }
+                ]
+            }})
+            if (commit) {pushCommit()}
+            pushUpdate()
+        },
+
+
+        // createSignal(signalId: string, signalType: 'continuous' | 'discrete', signalName: string, range?: [number, number]) : void {
+        //     returnToCommit()
+        //     pushCommand(() => {
+        //         return {
+        //         type: 'addNextState',
+        //         forward: [
+        //             {
+        //                 type: 'createSignal',
+        //                 signalId,
+        //                 signalType,
+        //                 signalName,
+        //                 range
+        //             }
+        //         ],
+        //         backward: [
+        //             {
+        //                 type: 'deleteSignal',
+        //                 signalId
+        //             }
+        //         ]
+        //     }})
+        //     pushCommit()
+        //     pushUpdate()
+        // },
+
+        createDiscreteSignal(signalId: string, signalName: string, defaultValue: string, isStatic?: true) : void {
             returnToCommit()
             pushCommand(() => {
                 return {
@@ -418,9 +302,10 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                     {
                         type: 'createSignal',
                         signalId,
-                        signalType,
+                        signalType: 'discrete',
                         signalName,
-                        range
+                        defaultValue,
+                        isStatic
                     }
                 ],
                 backward: [
@@ -433,6 +318,65 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
             pushCommit()
             pushUpdate()
         },
+
+        createContinuousSignal(signalId: string, signalName: string, range: [number, number], defaultValue: number, defaultCurve: string, isStatic?: true) : void {
+            returnToCommit()
+            pushCommand(() => {
+                return {
+                type: 'addNextState',
+                forward: [
+                    {
+                        type: 'createSignal',
+                        signalId,
+                        signalType: 'continuous',
+                        signalName,
+                        range,
+                        defaultValue,
+                        defaultCurve,
+                        isStatic
+                    }
+                ],
+                backward: [
+                    {
+                        type: 'deleteSignal',
+                        signalId
+                    }
+                ]
+            }})
+            pushCommit()
+            pushUpdate()
+        },
+
+        createContinuousBezierSignal(signalId: string, signalName: string, range: [number, number], defaultValue: number, defaultCurve: string, isStatic?: true) : void {
+            returnToCommit()
+            pushCommand(() => {
+                return {
+                type: 'addNextState',
+                forward: [
+                    {
+                        type: 'createSignal',
+                        signalId,
+                        signalType: 'continuous',
+                        signalName,
+                        range,
+                        defaultValue,
+                        defaultCurve,
+                        isStatic,
+                        bezier: true
+                    }
+                ],
+                backward: [
+                    {
+                        type: 'deleteSignal',
+                        signalId
+                    }
+                ]
+            }})
+            pushCommit()
+            pushUpdate()
+        },
+
+
         duplicateSignal(signalId: string) : void {
             returnToCommit()
             const newSignalId = generateId();
@@ -441,6 +385,12 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                 const signal = project.signalData[signalId];
                 if (!signal) throw new Error("Signal not found");
                 const signalName = project.orgData.signalNames[signalId];
+                const signalDefaultValue = signal.defaultValue;
+                const signalDefaultCurve = signal.type === 'continuous' ? (signal as ContinuousSignal).defaultCurve : undefined;
+                const isStatic = signal.isStatic;
+                const bezier = signal.type === 'continuous' && "bezier" in (signal as ContinuousSignal);
+
+
                 const newSignalName = signalName + '_copy';
                 const range = signal.type === 'continuous' ? (signal as ContinuousSignal).range : undefined;
                 return {
@@ -451,7 +401,11 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                             signalId: newSignalId,
                             signalType: signal.type,
                             signalName: newSignalName,
-                            range
+                            range,
+                            defaultValue: signalDefaultValue,
+                            defaultCurve: signalDefaultCurve,
+                            isStatic,
+                            bezier: bezier ? true : undefined
                         }
                     ],
                     backward: [
@@ -481,7 +435,7 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                     }
                 });
                 const createPinsInstructions = newPins.map(newPin => {
-                    return __addPinInstruction(newSignalId, newPin.pinId, newPin.pinTime, newPin.pinValue, newPin.functionString);
+                    return __addPinInstruction(project, newSignalId, newPin.pinId, newPin.pinTime, newPin.pinValue, newPin.functionString);
                 });
                 const deletePinsInstructions : {type:"deletePin", pinId: string}[] = newPins.map(newPin => {
                     return {
@@ -518,13 +472,46 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                         signalId,
                         signalType: signal.type,
                         signalName: project.orgData.signalNames[signalId],
-                        range: signal.type === 'continuous' ? (signal as ContinuousSignal).range : undefined
+                        range: signal.type === 'continuous' ? (signal as ContinuousSignal).range : undefined,
+                        defaultValue: signal.defaultValue,
+                        defaultCurve: signal.type === 'continuous' ? (signal as ContinuousSignal).defaultCurve : undefined,
+                        isStatic: signal.isStatic,
+                        bezier: signal.type === 'continuous' && "bezier" in (signal as ContinuousSignal) ? true : undefined,
+                        bezierControlPoints: signal.type === 'continuous' && "bezier" in (signal as ContinuousSignal) ? (signal as ContinuousBezierSignal).bezierControlPoints : undefined
                     }
                 ]
             }})
             pushCommit()
             pushUpdate()
         },
+
+        updateSignalDefaultValue(signalId: string, defaultValue: number | string) : void {
+            returnToCommit()
+            pushCommand(() => {
+                const project = getProject();
+                const signal = project.signalData[signalId];
+                if (!signal) throw new Error("Signal not found");
+                return {
+                type: 'addNextState',
+                forward: [
+                    {
+                        type: 'updateSignalDefaultValue',
+                        signalId,
+                        defaultValue
+                    }
+                ],
+                backward: [
+                    {
+                        type: 'updateSignalDefaultValue',
+                        signalId,
+                        defaultValue: signal.defaultValue
+                    }
+                ]
+            }})
+            pushCommit()
+            pushUpdate()
+        },
+
         updateSignalName(signalId: string, signalName: string) : void {
             returnToCommit()
             pushCommand(() => {

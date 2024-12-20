@@ -3,7 +3,6 @@ import PathProvider from './Path';
 import PathOutline from './PathOutline';
 import { Text1, Text2 } from './Text';
 import { CreateScene, SignalWindow, CartesianVectorHandle, RenderProps, Box, AngularVectorHandle, NormalVectorHandle } from './Dependencies';
-import BallPath from './BallPath';
 import templates from './Templates';
 
 import { Draw, Group, Effect, Camera, SignalProvider, Image, Mount } from './Dependencies';
