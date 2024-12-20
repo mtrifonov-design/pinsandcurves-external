@@ -19,6 +19,7 @@ interface TimelineData {
     framesPerSecond: number;
     playheadPosition: number;
     focusRange: [number, number];
+    playing: boolean;
 }
 
 type Curve = string;

@@ -33,6 +33,9 @@ type InterpolationFunctionContext = {
     interpolateSignalValueAtTime: (signalId: string, frame: number) => number,
     signal: (signalId: string) => number,
 
+    useAsset: (assetId: string) => any,
+    saveAsset: (assetId: string, asset: any) => void,
+
 };
 
 type InterpolationFunction = (

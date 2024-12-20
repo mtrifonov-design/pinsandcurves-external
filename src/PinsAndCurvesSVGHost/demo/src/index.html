@@ -1,18 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <style>
+        #svgcanvas {
+            height: calc(100vh - 10px);
+            border: 1px solid grey;
+        }
+
+        .checkerboard {
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            --checkerboard-size: 20px;
+            /* Size of each checker square */
+            --checkerboard-color: #eaeaea;
+            /* Color 1 */
+            background-image:
+                linear-gradient(45deg,
+                    var(--checkerboard-color) 25%,
+                    transparent 25%,
+                    transparent 75%,
+                    var(--checkerboard-color) 75%,
+                    var(--checkerboard-color)),
+                linear-gradient(45deg,
+                    var(--checkerboard-color) 25%,
+                    transparent 25%,
+                    transparent 75%,
+                    var(--checkerboard-color) 75%,
+                    var(--checkerboard-color));
+            background-size: calc(var(--checkerboard-size) * 2) calc(var(--checkerboard-size) * 2);
+            /* Double size to align tiles */
+            background-position: 0 0, var(--checkerboard-size) var(--checkerboard-size);
+            /* Offset second layer */
+        }
+    </style>
 </head>
-<body>
-    <svg id="svgcanvas" width="500" height="500" xmlns="http://www.w3.org/2000/svg">
+
+<body class="checkerboard" style="
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin: 5px;
+
+
+">
+
+    <svg id="svgcanvas" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
         <g id="circle">
             <ellipse cx="50" cy="50" rx="40" ry="80" stroke="black" stroke-width="3" fill="green" />
             <circle cx="150" cy="50" r="40" stroke="black" stroke-width="3" fill="red" />
         </g>
     </svg>
-    
+
+
     <button id="renderButton" style="
         margin-top: 20px;
         margin-left: 20px;
@@ -20,7 +66,8 @@
         top: 0;
         left: 0;
     ">Render</button>
-    
+    <audio id="audio" src="./audio.mp3"></audio>
     <script src="./main.ts" type="module"></script>
 </body>
+
 </html>

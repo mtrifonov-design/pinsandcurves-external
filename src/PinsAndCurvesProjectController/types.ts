@@ -53,6 +53,7 @@ interface ProjectTools {
     updateSignalIndex: (signalId: string, index: number, commit?: boolean) => void;
     updateSignalActiveStatus: (signalId: string, active: boolean) => void;
     updateFramesPerSecond: (framesPerSecond: number) => void;
+    playNextFrame: (nextFrame: number) => void;
     updatePlayheadPosition: (playheadPosition: number, commit?: boolean) => void;
     updateNumberOfFrames: (numberOfFrames: number) => void;
     updateProjectName: (projectName: string) => void;

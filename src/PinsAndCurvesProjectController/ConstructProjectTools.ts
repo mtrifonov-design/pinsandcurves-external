@@ -661,6 +661,39 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
             if (commit) {pushCommit()}
             pushUpdate()
         },
+        playNextFrame(nextFrame : number) : void {
+            const project = getProject();
+            const playheadPosition = project.timelineData.playheadPosition;
+            const [start,stop] = project.timelineData.focusRange;
+            const duration = stop - start;
+            const newPlayheadPosition = ((playheadPosition + 1)-start)%duration + start;
+            returnToCommit()
+            pushCommand(() => {
+                return {
+                type: 'addNextState',
+                forward: [
+                    {
+                        type: 'updatePlaying',
+                        playing: true
+                    },
+                    {
+                        type: 'updatePlayheadPosition',
+                        playheadPosition: nextFrame
+                    }
+                ],
+                backward: [
+                    {
+                        type: 'updatePlayheadPosition',
+                        playheadPosition
+                    },
+                    {
+                        type: 'updatePlaying',
+                        playing: false
+                    },
+                ]
+            }})
+            pushUpdate()
+        },
         updateFocusRange(range: [number, number]) : void {
             const [start, end] = range;
             returnToCommit()

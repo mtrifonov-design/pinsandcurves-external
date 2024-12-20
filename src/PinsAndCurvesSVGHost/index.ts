@@ -1,7 +1,7 @@
 import PinsAndCurvesHost from "../PinsAndCurvesHost";
 import SVGtoLottie from "./svgToLottie/svgToLottie";
 import renderAsImageSequence from "./ImageSequenceRenderer/RenderAsImageSequence";
-
+import AudioManager from "./audioManager";
 
 interface Config {
     framesPerSecond: number;
@@ -55,8 +55,20 @@ class PinsAndCurvesSVGHost extends PinsAndCurvesHost {
             host = PinsAndCurvesSVGHost.NewProject(config) as PinsAndCurvesSVGHost;
         }
         host.onUpdate(host.applySignals.bind(host));
+        host.addAudioSources();
         return host;
 
+    }
+
+    addAudioSources() {
+        const audioElements = document.querySelectorAll('audio');
+        for (let i = 0; i < audioElements.length; i++) {
+            const audio = audioElements[i] as HTMLAudioElement;
+            const fps = this.c.getProject().timelineData.framesPerSecond;
+            const audioManager = new AudioManager(audio,fps);
+            audioManager.castAudioToSignal(this.c.getProject(), this.c.projectTools);
+            this.onUpdate(() => audioManager.onUpdate(this.c.getProject()));
+        }
     }
 
 

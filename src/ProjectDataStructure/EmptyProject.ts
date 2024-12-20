@@ -17,7 +17,8 @@ const getEmptyProject : () => PinsAndCurvesProject = () => ({
         numberOfFrames: 100,
         framesPerSecond: 30,
         playheadPosition: 0,
-        focusRange: [0, 100]
+        focusRange: [0, 100],
+        playing: false
     },
     signalData: {},
     templateData: {}

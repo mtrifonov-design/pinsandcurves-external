@@ -35,6 +35,9 @@ interface PinsAndCurvesProjectInstructionTypes {
   updateNumberOfFrames: { type: 'updateNumberOfFrames'; numberOfFrames: number }
   updateProjectName: { type: 'updateProjectName'; projectName: string }
   updateFocusRange: { type: 'updateFocusRange'; focusRange: [number, number] }
+  updatePlaying: { type: 'updatePlaying'; playing: boolean }
+
+
   addCurveTemplate: { type: 'addCurveTemplate'; curveId: string; functionString: string }
   deleteCurveTemplate: { type: 'deleteCurveTemplate'; curveId: string }
   updateCurveTemplate: { type: 'updateCurveTemplate'; curveId: string; functionString: string }

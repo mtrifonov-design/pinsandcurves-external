@@ -1,6 +1,6 @@
 node_modules/
 dist/
 src/PinsAndCurvesCanvasWindows/demo/
-
+src/PinsAndCurvesSVGHost/demo/
 
 *storybook.log

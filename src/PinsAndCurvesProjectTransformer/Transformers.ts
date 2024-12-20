@@ -373,6 +373,11 @@ function updateFocusRange(draft: Project, instruction: InstructionTypes['updateF
     draft.timelineData.focusRange = focusRange;
 }
 
+function updatePlaying(draft: Project, instruction: InstructionTypes['updatePlaying']) {
+    const { playing } = instruction;
+    draft.timelineData.playing = playing;
+}
+
 function addCurveTemplate(draft: Project, instruction: InstructionTypes['addCurveTemplate']) {
     const { curveId, functionString } = instruction;
     if (draft.templateData[curveId]) throw new Error(`Curve template with id ${curveId} already exists`);
@@ -410,6 +415,7 @@ export {
     generateId,
     updatePins,
     updateFocusRange,
+    updatePlaying,
     addCurveTemplate,
     deleteCurveTemplate,
     updateCurveTemplate,
