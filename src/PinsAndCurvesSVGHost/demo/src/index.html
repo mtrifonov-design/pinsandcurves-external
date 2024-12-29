@@ -5,69 +5,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <style>
-        #svgcanvas {
-            height: calc(100vh - 10px);
-            border: 1px solid grey;
-        }
-
-        .checkerboard {
-            width: 100%;
-            height: 100%;
-            background-color: white;
-            --checkerboard-size: 20px;
-            /* Size of each checker square */
-            --checkerboard-color: #eaeaea;
-            /* Color 1 */
-            background-image:
-                linear-gradient(45deg,
-                    var(--checkerboard-color) 25%,
-                    transparent 25%,
-                    transparent 75%,
-                    var(--checkerboard-color) 75%,
-                    var(--checkerboard-color)),
-                linear-gradient(45deg,
-                    var(--checkerboard-color) 25%,
-                    transparent 25%,
-                    transparent 75%,
-                    var(--checkerboard-color) 75%,
-                    var(--checkerboard-color));
-            background-size: calc(var(--checkerboard-size) * 2) calc(var(--checkerboard-size) * 2);
-            /* Double size to align tiles */
-            background-position: 0 0, var(--checkerboard-size) var(--checkerboard-size);
-            /* Offset second layer */
-        }
-    </style>
+    <link rel="stylesheet" href="https://storage.googleapis.com/pinsandcurvesservice/svgserverstylesheet.css">
 </head>
 
-<body class="checkerboard" style="
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    margin: 5px;
+<body>
 
-
-">
-
-    <svg id="svgcanvas" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
-        <g id="circle">
-            <ellipse cx="50" cy="50" rx="40" ry="80" stroke="black" stroke-width="3" fill="green" />
-            <circle cx="150" cy="50" r="40" stroke="black" stroke-width="3" fill="red" />
-        </g>
+    <svg viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+            <rect id="rect2" x="0" y="0" width="1920" height="1080" stroke="black" stroke-width="3" fill="#c2ffc2" />
+            <ellipse id="shadow" cx="960" cy="640" rx="100" ry="20" fill="#000000" fill-opacity="0.5" style="mix-blend-mode:overlay" />
+            <circle id="ball" cx="960" cy="540" r="100" fill="#ea1a65" />
     </svg>
 
 
-    <button id="renderButton" style="
-        margin-top: 20px;
-        margin-left: 20px;
-        position: absolute;
-        top: 0;
-        left: 0;
-    ">Render</button>
-    <audio id="audio" src="./audio.mp3"></audio>
-    <script src="./main.ts" type="module"></script>
+    <!-- <audio id="audio" src="./audio.mp3"></audio> -->
+    <script src="./main.js" type="module"></script>
+    <!-- <script src="https://storage.googleapis.com/pinsandcurvesservice/PinsAndCurvesServerV3.umd.js"></script> 
+    <script>
+        const host = PinsAndCurves.SVGServer.Init({
+            framesPerSecond: 30,
+            numberOfFrames: 250,
+        },true);
+    </script> -->
 </body>
 
 </html>

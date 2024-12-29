@@ -46,10 +46,11 @@ function __deletePinCommand(getProject: () => Project, pinId: string) : WormComm
     const signalId = Object.keys(project.signalData).find(signalId => project.signalData[signalId]?.pinIds.includes(pinId));
     if (!signalId) throw new Error("Pin not found");
     const signalType = (project.signalData[signalId] as Signal).type;
+    const bezier = signalType === 'continuous' && "bezier" in (project.signalData[signalId] as ContinuousSignal);
     const pinTime = (project.signalData[signalId] as Signal).pinTimes[pinId] as number;
     const pinValue = (project.signalData[signalId] as Signal).pinValues[pinId] as number | string;
     const functionString = signalType === 'continuous' ? (project.signalData[signalId] as ContinuousSignal).curves[pinId] : undefined;
-    const bezierControlPoints = signalType === 'continuous' ? (project.signalData[signalId] as ContinuousBezierSignal).bezierControlPoints[pinId] : undefined;
+    const bezierControlPoints = bezier ? (project.signalData[signalId] as ContinuousBezierSignal).bezierControlPoints[pinId] : undefined;
     return {
     type: 'addNextState',
     forward: [
@@ -305,7 +306,33 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                         signalType: 'discrete',
                         signalName,
                         defaultValue,
-                        isStatic
+                        isStatic,
+                        displayValues: true
+                    }
+                ],
+                backward: [
+                    {
+                        type: 'deleteSignal',
+                        signalId
+                    }
+                ]
+            }})
+            pushCommit()
+            pushUpdate()
+        },
+
+        createDiscreteBeatSignal(signalId: string, signalName: string) : void {
+            returnToCommit()
+            pushCommand(() => {
+                return {
+                type: 'addNextState',
+                forward: [
+                    {
+                        type: 'createSignal',
+                        signalId,
+                        signalType: 'discrete',
+                        signalName,
+                        defaultValue : 'beat',
                     }
                 ],
                 backward: [
@@ -389,7 +416,7 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                 const signalDefaultCurve = signal.type === 'continuous' ? (signal as ContinuousSignal).defaultCurve : undefined;
                 const isStatic = signal.isStatic;
                 const bezier = signal.type === 'continuous' && "bezier" in (signal as ContinuousSignal);
-
+                const displayValues = signal.type === 'discrete' ? (signal as DiscreteSignal).displayValues : undefined;
 
                 const newSignalName = signalName + '_copy';
                 const range = signal.type === 'continuous' ? (signal as ContinuousSignal).range : undefined;
@@ -405,7 +432,8 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                             defaultValue: signalDefaultValue,
                             defaultCurve: signalDefaultCurve,
                             isStatic,
-                            bezier: bezier ? true : undefined
+                            bezier: bezier ? true : undefined,
+                            displayValues: displayValues ? true : undefined
                         }
                     ],
                     backward: [
@@ -477,7 +505,8 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                         defaultCurve: signal.type === 'continuous' ? (signal as ContinuousSignal).defaultCurve : undefined,
                         isStatic: signal.isStatic,
                         bezier: signal.type === 'continuous' && "bezier" in (signal as ContinuousSignal) ? true : undefined,
-                        bezierControlPoints: signal.type === 'continuous' && "bezier" in (signal as ContinuousSignal) ? (signal as ContinuousBezierSignal).bezierControlPoints : undefined
+                        bezierControlPoints: signal.type === 'continuous' && "bezier" in (signal as ContinuousSignal) ? (signal as ContinuousBezierSignal).bezierControlPoints : undefined,
+                        displayValues: signal.type === 'discrete' ? (signal as DiscreteSignal).displayValues : undefined
                     }
                 ]
             }})

@@ -78,6 +78,14 @@ const interpolateContinuousSignalValue = (project: Project, signalId : string, f
             let easyStep = context.easyStep;
             let easyEase = context.easyEase;
             let easyEaseOutElastic = context.easyEaseOutElastic;
+            let easyRepeat = context.easyRepeat;
+            let easyThreshold = context.easyThreshold;
+            let easyParabola = context.easyParabola;
+            let easyInOut = context.easyInOut;
+            let noise = context.noise;
+            let fitSignal = context.fitSignal;
+            let flip = context.flip;
+            let cloneSignal = context.cloneSignal;
 
 
             ${nextPinFunctionString}`

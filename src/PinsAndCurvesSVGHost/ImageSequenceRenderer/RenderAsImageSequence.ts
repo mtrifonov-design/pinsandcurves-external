@@ -1,6 +1,11 @@
 import JSZip from 'jszip';
 import AudioManager from '../audioManager';
 
+function padWithZeros(number : number, length : number) {
+    return String(number).padStart(length, '0');
+}
+
+
 function generateImage(frame: number) {
     const svgcanvas = document.getElementById('svgcanvas') as HTMLCanvasElement;
     const data = (new XMLSerializer()).serializeToString(svgcanvas);
@@ -175,12 +180,12 @@ function openImageSequenceInNewTab(imageSequence: any[], fps: number, width: num
     downloadButton.addEventListener('click', async () => {
         const jsZip = new JSZip();
         const images = jsZip.folder('images');
-        const blobs = imageSequence.map(imageToBlob);
+        const blobs = imageSequence.map((img) => imageToBlob(img, width, height));
 
         await Promise.all(blobs);
 
         blobs.forEach((blob, i) => {
-            (images as any).file(`frame_${i}.png`, blob);
+            (images as any).file(`frame_${padWithZeros(i,5)}.png`, blob);
         });
 
         jsZip.generateAsync({ type: 'blob' }).then((content) => {
@@ -247,13 +252,13 @@ function openImageSequenceInNewTab(imageSequence: any[], fps: number, width: num
     w.document.close();
 }
 
-function imageToBlob(img: HTMLImageElement) {
+function imageToBlob(img: HTMLImageElement, width : number, height: number) {
     const canvas = document.createElement('canvas');
-    canvas.width = img.width;
-    canvas.height = img.height;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
     ctx.drawImage(img, 0, 0);
-    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 1));
 }
 
 

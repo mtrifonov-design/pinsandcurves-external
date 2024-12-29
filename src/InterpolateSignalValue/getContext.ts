@@ -1,7 +1,10 @@
 
 import { interpolateSignalValue } from '.';
 import { Project } from '../PinsAndCurvesProjectController';
-import type { InterpolationFunctionContext, InterpolationFunction, InterpolateSignalError, InterpolateSignalErrorLog, InterpolateSignalReturnType } from './types';
+import type { InterpolationFunctionContext, InterpolationFunctionPreContext, InterpolationFunction, InterpolateSignalError, InterpolateSignalErrorLog, InterpolateSignalReturnType } from './types';
+import parabola from './Parabola';
+import noise from './noise';
+import { ContinuousSignal } from '../ProjectDataStructure';
 
 type Vec2 = {x: number,y:number}
 const cubic = (P0 : Vec2, P1:Vec2, P2 : Vec2, P3 : Vec2, t: number) => {
@@ -119,23 +122,9 @@ function useAsset(assetId: string) {
 }
 
 
-type GetContextProps = {
-    nextPinTime: number
-    nextPinValue: number,
-    previousPinTime: number,
-    previousPinValue: number,
-    pinId: string,
-    relativeTime: number,
-    frame: number,
-    numberOfFrames: number,
-    framesPerSecond: number,
-    range: [number, number],
-    defaultValue: number,
-    project: Project,
-    interpolateSignalValueAtTime: (signalId: string, frame: number) => number,
-}
 
-function getContext(p: GetContextProps): InterpolationFunctionContext {
+
+function getContext(p: InterpolationFunctionPreContext): InterpolationFunctionContext {
 
     const { nextPinTime, project, range, defaultValue, pinId, frame, numberOfFrames, framesPerSecond, nextPinValue, previousPinTime, previousPinValue, relativeTime, interpolateSignalValueAtTime } = p;
 
@@ -204,8 +193,58 @@ function getContext(p: GetContextProps): InterpolationFunctionContext {
         easyEaseOutElastic: () => {
             return previousPinValue + easeOutElastic(relativeTime) * (nextPinValue - previousPinValue);
         },
+        easyInOut: () => {
+            return 1;
+        },
+        noise,
+        easyThreshold: () => {
+            const halfRange = (maxValue - minValue) / 2;
+            return nextPinValue > halfRange ? maxValue : minValue;
+        },
+        easyRepeat: () => {
+            return relativeTime;
+        },
+        easyParabola: () => {
+            return parabola(p);
+        },
         interpolateSignalValueAtTime,
-        signal: (signalId: string) => interpolateSignalValueAtTime(signalId, frame),
+        signal: (signalName: string) => interpolateSignalValueAtTime(signalName, frame),
+        cloneSignal: (signalName: string) => {
+            const signalId = project.orgData.signalIds.find((signalId) => project.orgData.signalNames[signalId] === signalName);
+            if (!signalId) {
+                throw new Error(`Signal ${signalName} not found`);
+            }
+            const signal = project.signalData[signalId];
+            if (!signal) {
+                throw new Error(`Signal ${signalName} not found`);
+            }
+            const pins = signal.pinIds;
+            if (pins.length < 2) {
+                return defaultValue;
+            }
+            const firstPinTime = signal.pinTimes[pins[0]] as number;
+            const lastPinTime = signal.pinTimes[pins[pins.length - 1]] as number;
+            const time = firstPinTime + (lastPinTime - firstPinTime) * relativeTime;
+            return interpolateSignalValueAtTime(signalName, time);
+        },
+        fitSignal: (signalName: string, startValue?: number, endValue?: number) => {
+
+            const signalId = project.orgData.signalIds.find((signalId) => project.orgData.signalNames[signalId] === signalName);
+            if (!signalId) {
+                throw new Error(`Signal ${signalName} not found`);
+            }
+            const start = startValue ?? minValue;
+            const end = endValue ?? maxValue;
+
+            const signalRange = (project.signalData[signalId] as ContinuousSignal).range;
+            const signalValue = interpolateSignalValueAtTime(signalName, frame);
+            const normalisedValue = (signalValue - signalRange[0]) / (signalRange[1] - signalRange[0]);
+            return start + normalisedValue * (end - start);
+        },
+        flip: (value: number) => {
+            return maxValue - value + minValue;
+        },
+
         useAsset,
         saveAsset,
     }

@@ -2,7 +2,9 @@ import { ProjectBuilder } from '../ProjectDataStructure';
 import { PinsAndCurvesProjectController as Controller, PostMessageAPI } from '../PinsAndCurvesProjectController'
 import { interpolateSignalValue } from '../InterpolateSignalValue';
 
-const CLIENT_URL = "http://localhost:6006" // = "https://pinsandcurves.app";
+// const CLIENT_URL = "http://localhost:5173" // = "https://pinsandcurves.app";
+// const CLIENT_URL = "http://localhost:6006"
+const CLIENT_URL = "https://pinsandcurves.app";
 
 interface Config {
     framesPerSecond: number;
@@ -31,6 +33,16 @@ class PinsAndCurvesHost {
     config: Config;
 
     constructor(c: Controller, config: Config) {
+
+        const hash = window.location.hash;
+        if (hash === "") {
+            console.log("PinsAndCurves Opening");
+            window.location.href = `https://pinsandcurves.app/#/run/${encodeURIComponent(window.location.href+'#internal')}`;
+            // window.open(`https://pinsandcurves.app/#/run/${encodeURIComponent(window.location.href+'#internal')}`);
+        }
+        
+
+
         const receive = c.receive.bind(c);
         const subscribe = PostMessageAPI.subscribeToProjectEvents(CLIENT_URL);
         subscribe((e: any) => {
@@ -59,6 +71,8 @@ To open editor, open https://pinsandcurves.app/#/run/${encodeURIComponent(cleane
                 }
             }
         }
+
+
 
     }
 

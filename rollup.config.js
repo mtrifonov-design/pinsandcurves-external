@@ -143,5 +143,39 @@ export default [
       }),
       typescript({ tsconfig: "./tsconfig.json" }),
       terser()],
-  }
+  },
+  {
+    input: "src/PinsAndCurvesSVGHost/index.ts", // Entry point of your library
+    output: [
+      {
+        file: "dist/PinsAndCurvesSVGHost/PinsAndCurvesSVGHost.umd.js", // The bundled file
+        format: "umd", // Universal Module Definition (UMD)
+        name: "PinsAndCurvesSVGHost", // Name of the global variable in the browser
+      },
+    ],
+    plugins: [resolve(), commonjs(), 
+      replace({
+        "process.env.NODE_ENV": JSON.stringify("production"), // Replace with "production" or "development"
+        preventAssignment: true, // Required to suppress warnings
+      }),
+      typescript({ tsconfig: "./tsconfig.json" }),
+      terser()],
+  },
+  {
+    input: "src/PinsAndCurvesServer/index.ts", // Entry point of your library
+    output: [
+      {
+        file: "dist/PinsAndCurvesServer/PinsAndCurvesServer.umd.js", // The bundled file
+        format: "umd", // Universal Module Definition (UMD)
+        name: "PinsAndCurves", // Name of the global variable in the browser
+      },
+    ],
+    plugins: [resolve(), commonjs(), 
+      replace({
+        "process.env.NODE_ENV": JSON.stringify("production"), // Replace with "production" or "development"
+        preventAssignment: true, // Required to suppress warnings
+      }),
+      typescript({ tsconfig: "./tsconfig.json" }),
+      terser()],
+  },
 ];

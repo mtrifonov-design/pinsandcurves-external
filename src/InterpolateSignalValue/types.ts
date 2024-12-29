@@ -1,5 +1,22 @@
 import { Project } from "../PinsAndCurvesProjectController";
 
+
+type InterpolationFunctionPreContext = {
+    nextPinTime: number
+    nextPinValue: number,
+    previousPinTime: number,
+    previousPinValue: number,
+    pinId: string,
+    relativeTime: number,
+    frame: number,
+    numberOfFrames: number,
+    framesPerSecond: number,
+    range: [number, number],
+    defaultValue: number,
+    project: Project,
+    interpolateSignalValueAtTime: (signalId: string, frame: number) => number,
+}
+
 type InterpolationFunctionContext = {
     nextPinTime: number,
     nextPinValue: number,
@@ -19,7 +36,7 @@ type InterpolationFunctionContext = {
     easeInCubic: (x: number) => number,
     easeOutCubic: (x: number) => number,
     easeInOutCubic: (x: number) => number,
-    easeOutElastic: (x: number) => number
+    easeOutElastic: (x: number) => number,
 
 
     easyLinear: () => number,
@@ -29,9 +46,18 @@ type InterpolationFunctionContext = {
     easyEase: () => number,
     easyEaseOutElastic: () => number,
     bezier: () => number,
+    easyInOut: () => number,
+    easyParabola: () => number,
+    easyThreshold: () => number,
+    easyRepeat: () => number,
 
     interpolateSignalValueAtTime: (signalId: string, frame: number) => number,
     signal: (signalId: string) => number,
+    noise: (x: number) => number,
+
+    fitSignal: (signalName: string, startValue?: number, endValue?: number) => void,
+    cloneSignal: (signalName: string) => void,
+    flip: (value: number) => void,
 
     useAsset: (assetId: string) => any,
     saveAsset: (assetId: string, asset: any) => void,
@@ -52,4 +78,4 @@ type InterpolateSignalErrorLog = InterpolateSignalError[];
 
 type InterpolateSignalReturnType = [string | number, InterpolateSignalErrorLog];
 
-export type { InterpolationFunctionContext, InterpolationFunction, InterpolateSignalError, InterpolateSignalErrorLog, InterpolateSignalReturnType };
+export type { InterpolationFunctionContext, InterpolationFunctionPreContext, InterpolationFunction, InterpolateSignalError, InterpolateSignalErrorLog, InterpolateSignalReturnType };
