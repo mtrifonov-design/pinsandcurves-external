@@ -31,6 +31,16 @@ const configC = defineConfig({
     },
 });
 
+const p5brush = defineConfig({
+    root: "./src/p5brush/demo/src",
+    server: {
+        port: 6000,
+    },
+    build: {
+        outDir: "./src/p5brush/demo/dist",
+    },
+});
+
 export default defineConfig(({ mode }) => {
     // Use the mode or environment variable to select the configuration
     let selectedConfig;
