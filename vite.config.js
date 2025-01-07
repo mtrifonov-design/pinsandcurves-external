@@ -32,12 +32,12 @@ const configC = defineConfig({
 });
 
 const p5brush = defineConfig({
-    root: "./src/p5brush/demo/src",
+    root: "./src/demos/p5brush",
     server: {
-        port: 6000,
+        port: 6001,
     },
     build: {
-        outDir: "./src/p5brush/demo/dist",
+        outDir: "./src/demos/p5brush/dist",
     },
 });
 
@@ -53,6 +53,9 @@ export default defineConfig(({ mode }) => {
             break;
         case "serverC":
             selectedConfig = configC;
+            break;
+        case "p5brush":
+            selectedConfig = p5brush;
             break;
         default:
             selectedConfig = configA;

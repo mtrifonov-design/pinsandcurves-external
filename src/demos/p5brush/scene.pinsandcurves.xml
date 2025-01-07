@@ -1,0 +1,11 @@
+<pins-and-curves>
+
+    <extensions>
+    <extension name="p5brush" src="./p5brush.js"></extension>
+    </extensions>
+
+    <scene>
+        <circle></circle>
+    </scene>
+
+</pins-and-curves>
