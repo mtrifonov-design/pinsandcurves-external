@@ -3,6 +3,7 @@ const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
 
 function builder(virtualElement, renderedChild) {
+    svg.appendChild(renderedChild);
     return svg;
 }
 
