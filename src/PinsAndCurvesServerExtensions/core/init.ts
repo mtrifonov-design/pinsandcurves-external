@@ -6,7 +6,7 @@ function init() {
     let host: PinsAndCurvesHost;
     const persistence = true;
     const config = {
-        framesPerSecond: 30,
+        framesPerSecond: 12,
         numberOfFrames: 100,    
     }
     if (persistence) {

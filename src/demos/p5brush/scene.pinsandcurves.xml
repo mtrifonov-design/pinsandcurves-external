@@ -4,9 +4,12 @@
     <extension name="p5brush" src="./p5brush.js"></extension>
     </extensions>
 
-    <scene>
+    <scene
+        width="1080"
+        height="1080"
+    >
         <circle r="50"></circle>
-        <p5brush id="mickey"></p5brush>
+        <p5brush id="mrSnake"></p5brush>
     </scene>
 
 </pins-and-curves>
