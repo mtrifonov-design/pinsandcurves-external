@@ -6,8 +6,8 @@ function init() {
     let host: PinsAndCurvesHost;
     const persistence = true;
     const config = {
-        framesPerSecond: 12,
-        numberOfFrames: 100,    
+        framesPerSecond: 30,
+        numberOfFrames: 500,    
     }
     if (persistence) {
         const json = localStorage.getItem('pac');

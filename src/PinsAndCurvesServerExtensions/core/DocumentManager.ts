@@ -1,6 +1,6 @@
 
 import PinsAndCurvesHost from "../../PinsAndCurvesHost";
-
+import renderAsImageSequence from "./RenderAsImageSequence";
 
 type Builder = (virtualElement: Element, renderedChild: Element) => Element;
 type Updater = (virtualElement: Element) => void;
@@ -109,6 +109,18 @@ class DocumentManager {
             uiLayer.appendChild(uiBuilder());
         });
         document.body.appendChild(uiLayer);
+
+        const renderButton = document.createElement('button');
+        renderButton.textContent = 'Render';
+        renderButton.style.position = 'absolute';
+        renderButton.style.bottom = '0';
+        renderButton.style.right = '0';
+        renderButton.style.zIndex = '100';
+        renderButton.onclick = () => {
+            this.exportAsFrames();
+        };
+        uiLayer.appendChild(renderButton);
+
     }
 
     traverseBuildRecursive(virtualElement: Element) : Element {
@@ -148,8 +160,8 @@ class DocumentManager {
         }
     }
 
-    update() {
-        this.applySignals();
+    update(frame ?: number) {
+        this.applySignals(frame);
         this.traverseUpdateRecursive(this.virtualRoot);
     }
 
@@ -179,8 +191,8 @@ class DocumentManager {
             };
             const name = parts[0].slice(1, parts[0].length);
             const property = parts.slice(1).join('.');
+            
             const value = host.signal(signalName, frame || currentFrame);
-
             let elements = [];
             if (type === 'idSelector') {
                 const element = this.virtualRoot.querySelector(`#${name}`);
@@ -199,6 +211,18 @@ class DocumentManager {
             element.setAttribute('relative-time', String(relativeTime));
             element.setAttribute('mode',this.mode);
         });
+    }
+
+    exportAsFrames() {
+        const focusRange = this.host.c.getProject().timelineData.focusRange;
+        const [startFrame, endFrame] = focusRange;
+        const fps = this.host.c.getProject().timelineData.framesPerSecond;
+        renderAsImageSequence({
+            applySignals: this.update.bind(this),
+            startFrame,
+            endFrame,
+            framesPerSecond: fps,
+        })
     }
 
 

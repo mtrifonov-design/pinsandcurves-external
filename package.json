@@ -30,7 +30,8 @@
     "start:demoa": "vite --mode serverA",
     "start:demob": "vite --mode serverB",
     "start:democ": "vite --mode serverC",
-    "start:p5brush": "vite --mode p5brush"
+    "start:p5brush": "vite --mode p5brush",
+    "start:p5slinky": "vite --mode p5slinky"
   },
   "author": "",
   "license": "ISC",

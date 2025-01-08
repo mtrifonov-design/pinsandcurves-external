@@ -1,0 +1,15 @@
+<pins-and-curves>
+
+    <extensions>
+    <extension name="p5slinky" src="./p5slinky.js"></extension>
+    </extensions>
+
+    <scene
+        width="1080"
+        height="1080"
+    >
+        <circle r="50"></circle>
+        <p5slinky id="slinky"></p5slinky>
+    </scene>
+
+</pins-and-curves>

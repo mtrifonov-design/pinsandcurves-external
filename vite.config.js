@@ -41,6 +41,16 @@ const p5brush = defineConfig({
     },
 });
 
+const p5slinky = defineConfig({
+    root: "./src/demos/p5slinky",
+    server: {
+        port: 6002,
+    },
+    build: {
+        outDir: "./src/demos/p5slinky/dist",
+    },
+});
+
 export default defineConfig(({ mode }) => {
     // Use the mode or environment variable to select the configuration
     let selectedConfig;
@@ -56,6 +66,9 @@ export default defineConfig(({ mode }) => {
             break;
         case "p5brush":
             selectedConfig = p5brush;
+            break;
+        case "p5slinky":
+            selectedConfig = p5slinky;
             break;
         default:
             selectedConfig = configA;
