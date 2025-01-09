@@ -95,18 +95,18 @@ let sketch = function (p) {
             }
         }
 
-        // p.drawingContext.filter = 'blur(20px)';
+        // p.drawingContext.filter = 'blur(120px)';
         
         // // // draw several larges circles along the path,
         // // // with the color changing along the path
 
-        // const numberCircles = 5;
+        // const numberCircles = 10;
         // const radius = 500;
 
         // for (let i = 0; i < numberCircles; i++) {
         //     const t = i / numberCircles;
         //     const [x, y, tx, ty] = ellipseAlongPath(p, x1, y1, cx, cy, x2, y2, t);
-        //     const color = p.color(p.map(i, 0, numberCircles, 0, 360), 100, 130,208);
+        //     const color = p.color(p.map(i, 0, numberCircles, 0, 360), 200, 130,108);
         //     // make it alpha
         //     p.fill(color);
         //     p.noStroke();
@@ -132,24 +132,26 @@ let sketch = function (p) {
             const cy2 = y2 - (y3 - y1) / 6;
     
             const colordark = p.color(p.map(i, 1, accPoints.length - 2, 0, 360), 180, 200,254);
-            const w = 20;
+            const w = 5;
             const w2 = w/ 2;
 
 
-            // p.strokeWeight(w2);
-            // p.stroke(colordark);
-            // p.bezier(x1, y1 + w2, cx1, cy1 +w2, cx2, cy2 +w2 , x2, y2 +w2);
+            p.strokeWeight(w2);
+            p.stroke(colordark);
+            p.bezier(x1, y1 + w2, cx1, cy1 +w2, cx2, cy2 +w2 , x2, y2 +w2);
 
-            // p.strokeWeight(w2);
-            // p.stroke(colordark);
-            // p.bezier(x1, y1 - w2, cx1, cy1 -w2, cx2, cy2 -w2 , x2, y2 -w2);
+            p.strokeWeight(w2);
+            p.stroke(colordark);
+            p.bezier(x1, y1 - w2, cx1, cy1 -w2, cx2, cy2 -w2 , x2, y2 -w2);
 
             const color = p.color(p.map(i, 1, accPoints.length - 2, 0, 360), 180, 254,254);
 
-            p.drawingContext.shadowColor = color;
-            p.drawingContext.shadowBlur = 20;
-            p.drawingContext.shadowOffsetX = 0;
-            p.drawingContext.shadowOffsetY = 0;
+            // const shadowColor = p.color(p.map(i, 1, accPoints.length - 2, 0, 360), 180, 234,154);
+
+            // p.drawingContext.shadowColor = shadowColor;
+            // p.drawingContext.shadowBlur = 10;
+            // p.drawingContext.shadowOffsetX = 0;
+            // p.drawingContext.shadowOffsetY = 0;
 
             p.strokeWeight(10);
             p.stroke(color);

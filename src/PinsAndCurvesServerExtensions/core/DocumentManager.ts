@@ -121,6 +121,19 @@ class DocumentManager {
         };
         uiLayer.appendChild(renderButton);
 
+        const saveAsJsonButton = document.createElement('button');
+        saveAsJsonButton.textContent = 'Save as JSON';
+        saveAsJsonButton.style.position = 'absolute';
+        saveAsJsonButton.style.bottom = '0';
+        saveAsJsonButton.style.right = '100px';
+        saveAsJsonButton.style.zIndex = '100';
+
+        saveAsJsonButton.onclick = () => {
+            this.saveAsJson();
+        };
+
+        uiLayer.appendChild(saveAsJsonButton);
+
     }
 
     traverseBuildRecursive(virtualElement: Element) : Element {
@@ -223,6 +236,16 @@ class DocumentManager {
             endFrame,
             framesPerSecond: fps,
         })
+    }
+
+    saveAsJson() {
+        const json = JSON.stringify(this.host.serialize());
+        const blob = new Blob([json], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'project.json';
+        a.click();
     }
 
 
