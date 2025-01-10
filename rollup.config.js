@@ -30,7 +30,6 @@ export default [
       typescript({ tsconfig: "./tsconfig.json" }),
       terser(),
     ],
-    // external: ["react", "react-dom"],
   },
   {
     input: "src/InterpolateSignalValue/index.ts",
@@ -53,7 +52,6 @@ export default [
       typescript({ tsconfig: "./tsconfig.json" }),
       terser(),
     ],
-    // external: ["react", "react-dom"],
   },
   {
     input: "src/InterpolateSignalValue/BatchWorker.ts",
@@ -80,6 +78,28 @@ export default [
   },
   {
     input: "src/CanvasWindows/index.ts",
+    output: [
+      {
+        file: packageJson.exports["./CanvasWindows"].require,
+        format: "cjs",
+        sourcemap: true,
+      },
+      {
+        file: packageJson.exports["./CanvasWindows"].import,
+        format: "esm",
+        sourcemap: true,
+      },
+    ],
+    plugins: [
+      peerDepsExternal(),
+      resolve(),
+      commonjs(),
+      typescript({ tsconfig: "./tsconfig.json" }),
+      terser(),
+    ],
+  },
+  {
+    input: "src/PinsAndCurvesHost/index.ts",
     output: [
       {
         file: packageJson.exports["./CanvasWindows"].require,

@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/mtrifonov-design"
   },
-  "version": "0.0.215",
+  "version": "0.0.216",
   "description": "",
   "exports": {
     ".": {
@@ -22,6 +22,11 @@
       "import": "./dist/CanvasWindows/esm/index.js",
       "require": "./dist/CanvasWindows/cjs/index.js",
       "types": "./dist/CanvasWindows/types/types.d.ts"
+    },
+    "./ServerCore": {
+      "import": "./dist/ServerCore/esm/index.js",
+      "require": "./dist/ServerCore/cjs/index.js",
+      "types": "./dist/ServerCore/types/types.d.ts"
     }
   },
   "scripts": {

@@ -7,7 +7,6 @@ export { StateTimeWorm };
 import * as ProjectNode from './ProjectNode';
 export { ProjectNode };
 
-
 import * as PinsAndCurvesProjectTransformer from './PinsAndCurvesProjectTransformer';
 export { PinsAndCurvesProjectTransformer };
 
