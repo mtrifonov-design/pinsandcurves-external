@@ -102,12 +102,12 @@ export default [
     input: "src/PinsAndCurvesHost/index.ts",
     output: [
       {
-        file: packageJson.exports["./CanvasWindows"].require,
+        file: packageJson.exports["./PinsAndCurvesHost"].require,
         format: "cjs",
         sourcemap: true,
       },
       {
-        file: packageJson.exports["./CanvasWindows"].import,
+        file: packageJson.exports["./PinsAndCurvesHost"].import,
         format: "esm",
         sourcemap: true,
       },
@@ -147,6 +147,17 @@ export default [
     }],
     plugins: [dts.default()],
   },
+  {
+    input: "src/PinsAndCurvesHost/index.ts",
+    output: [{ 
+      file: packageJson.exports["./PinsAndCurvesHost"].types,
+      format: "es",
+      sourcemap: true,
+    }],
+    plugins: [dts.default()],
+  },
+
+  // UMD MODULES
   {
     input: "src/PinsAndCurvesHost/index.ts", // Entry point of your library
     output: [

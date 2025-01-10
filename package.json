@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/mtrifonov-design"
   },
-  "version": "0.0.216",
+  "version": "0.0.217",
   "description": "",
   "exports": {
     ".": {
@@ -23,10 +23,10 @@
       "require": "./dist/CanvasWindows/cjs/index.js",
       "types": "./dist/CanvasWindows/types/types.d.ts"
     },
-    "./ServerCore": {
-      "import": "./dist/ServerCore/esm/index.js",
-      "require": "./dist/ServerCore/cjs/index.js",
-      "types": "./dist/ServerCore/types/types.d.ts"
+    "./PinsAndCurvesHost": {
+      "import": "./dist/PinsAndCurvesHost/esm/index.js",
+      "require": "./dist/PinsAndCurvesHost/cjs/index.js",
+      "types": "./dist/PinsAndCurvesHost/types/types.d.ts"
     }
   },
   "scripts": {
