@@ -71,7 +71,6 @@ class PACProjectControllerClass {
         this.projectNode.receive(e);
     }
 
-
     get projectTools() {
         if (!this.projectNode.initialized) throw new Error("Project not initialized");
 

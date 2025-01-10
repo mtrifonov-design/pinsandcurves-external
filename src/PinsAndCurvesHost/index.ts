@@ -9,12 +9,14 @@ const CLIENT_URL = "https://pinsandcurves.app";
 interface Config {
     framesPerSecond: number;
     numberOfFrames: number;
+    name: string;
     templates?: { [key: string]: Function };
 }
 
 const defaultConfig = {
     framesPerSecond: 30,
     numberOfFrames: 250,
+    name: "New Project",
 };
 
 function getDispatch() {
@@ -81,9 +83,9 @@ To open editor, open https://pinsandcurves.app/#/run/${encodeURIComponent(cleane
         config = { ...defaultConfig, ...config };
         const pb = new ProjectBuilder();
         pb.setTimelineData(config.numberOfFrames as number, config.framesPerSecond as number, 20);
+        pb.setName(config.name as string);
         const c = Controller.HostFromProject(getDispatch(), pb.getProject());
 
-        // c.projectTools.addPinContinuous("signalId","pinId",pinTime,pinValue,functionString, commit)
         return new this(c, config as Config);
     }
     static FromSerialized(serialized: string, config?: Partial<Config>) {

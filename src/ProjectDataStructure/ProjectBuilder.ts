@@ -22,6 +22,12 @@ function clamp(value: number, min: number, max: number) {
 class ProjectBuilder {
     _project : PinsAndCurvesProject = emptyProject();
     constructor() {};
+
+    setName(name: string) {
+        this._project.metaData.name = name;
+    }
+
+
     addStaticStringSignal(signalId: string, signalName: string, staticValue: string) {
         this._project.orgData.signalIds.push(signalId);
         this._project.orgData.signalNames[signalId] = signalName;

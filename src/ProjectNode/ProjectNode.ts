@@ -196,7 +196,8 @@ class ClientProjectNode<Project, ProjectInstruction> extends ProjectNodeBase<Pro
         if (e.requestId && this.projectRequestCallbacks[e.requestId]) {
           this.projectRequestCallbacks[e.requestId]();
           delete this.projectRequestCallbacks[e.requestId];
-        }
+        };
+        this.subscribers.forEach((s) => s());
         break;
       case "pushUpdate":
         this.processUpdate(e);
