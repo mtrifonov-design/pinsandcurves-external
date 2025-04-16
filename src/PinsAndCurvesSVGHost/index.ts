@@ -1,4 +1,4 @@
-import PinsAndCurvesHost from "../PinsAndCurvesHost";
+import PinsAndCurvesHost from "../PinsAndCurvesClient";
 import SVGtoLottie from "./svgToLottie/svgToLottie";
 import renderAsImageSequence from "./ImageSequenceRenderer/RenderAsImageSequence";
 import AudioManager from "./audioManager";

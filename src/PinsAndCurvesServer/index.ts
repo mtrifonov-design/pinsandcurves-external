@@ -1,4 +1,4 @@
-import PinsAndCurvesHost from "../PinsAndCurvesHost";
+import PinsAndCurvesHost from "../PinsAndCurvesClient";
 import PinsAndCurvesSVGHost from "../PinsAndCurvesSVGHost";
 
 const PinsAndCurves = {

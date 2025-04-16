@@ -1,0 +1,1 @@
+gsutil -h "Cache-Control:public, max-age=0" cp ./dist/PinsAndCurvesClient/PinsAndCurvesClient.umd.js gs://pinsandcurvesservice/$(basename ./dist/PinsAndCurvesClient/PinsAndCurvesClient.umd.js)

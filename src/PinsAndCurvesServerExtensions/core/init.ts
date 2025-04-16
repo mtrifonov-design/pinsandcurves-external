@@ -1,4 +1,4 @@
-import PinsAndCurvesHost from "../../PinsAndCurvesHost";
+import PinsAndCurvesHost from "../../PinsAndCurvesClient";
 import { debounce } from "./utils";
 import DocumentManager from "./DocumentManager";
 

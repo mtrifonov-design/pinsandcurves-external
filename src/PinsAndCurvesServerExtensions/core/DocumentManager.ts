@@ -1,5 +1,5 @@
 
-import PinsAndCurvesHost from "../../PinsAndCurvesHost";
+import PinsAndCurvesHost from "../../PinsAndCurvesClient";
 import renderAsImageSequence from "./RenderAsImageSequence";
 
 type Builder = (virtualElement: Element, renderedChild: Element) => Element;

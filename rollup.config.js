@@ -176,6 +176,23 @@ export default [
       terser()],
   },
   {
+    input: "src/PinsAndCurvesClient/index.ts", // Entry point of your library
+    output: [
+      {
+        file: "dist/PinsAndCurvesClient/PinsAndCurvesClient.umd.js", // The bundled file
+        format: "umd", // Universal Module Definition (UMD)
+        name: "PinsAndCurvesClient", // Name of the global variable in the browser
+      },
+    ],
+    plugins: [resolve(), commonjs(), 
+      replace({
+        "process.env.NODE_ENV": JSON.stringify("production"), // Replace with "production" or "development"
+        preventAssignment: true, // Required to suppress warnings
+      }),
+      typescript({ tsconfig: "./tsconfig.json" }),
+      terser()],
+  },
+  {
     input: "src/PinsAndCurvesSVGHost/index.ts", // Entry point of your library
     output: [
       {

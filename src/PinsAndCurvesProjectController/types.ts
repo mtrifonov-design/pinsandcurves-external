@@ -43,10 +43,7 @@ interface ProjectTools {
     createDiscreteBeatSignal: (signalId: string, signalName: string) => void;
     createContinuousSignal: (signalId: string, signalName: string, range: [number, number], defaultValue: number, defaultCurve: string, isStatic?: true) => void;
     createContinuousBezierSignal: (signalId: string, signalName: string, range: [number, number], defaultValue: number, defaultCurve: string, isStatic?: true) => void;
-
     updateSignalDefaultValue: (signalId: string, defaultValue: number | string) => void;
-
-
     duplicateSignal: (signalId: string) => void;
     deleteSignal: (signalId: string) => void;
     updateSignalName: (signalId: string, signalName: string) => void;
