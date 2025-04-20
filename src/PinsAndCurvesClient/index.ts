@@ -4,8 +4,6 @@ import { interpolateSignalValue } from '../InterpolateSignalValue';
 
 const CLIENT_URL = window.location.origin
 
-console.log(CLIENT_URL)
-
 
 function getDispatch() {
     let dispatch = (e: any) => { };
@@ -47,7 +45,7 @@ class PinsAndCurvesClient {
         const project = this.c.getProject()
         const signalIdEntry = Object.entries(project.orgData.signalNames).find(([key, value]) => value === name);
         if (signalIdEntry === undefined) {
-            console.warn(`Signal ${name} not found in project.`);
+            //console.warn(`Signal ${name} not found in project.`);
             return 0;
         }
         const signalId = signalIdEntry[0];
@@ -62,6 +60,11 @@ class PinsAndCurvesClient {
         } catch(e: any) {
             console.error(e);
         }
+    }
+
+    playhead() {
+        const project = this.c.getProject();
+        return project.timelineData.playheadPosition;
     }
 
     subscribers : Function[] = [];
