@@ -29,11 +29,11 @@ function render(camera: Box, windows: CanvasWindow[], canvas: HTMLCanvasElement,
             const layerKey = layerNumber+"";
             if (cachedLayers[layerKey] === undefined) {
                 const layerCanvas = document.createElement('canvas');
-                layerCanvas.width = canvas.width;
-                layerCanvas.height = canvas.height;
                 cachedLayers[layerKey] = layerCanvas;
             }
             const layerCanvas = cachedLayers[layerKey];
+            layerCanvas.width = canvas.width;
+            layerCanvas.height = canvas.height;
             const layerCtx = layerCanvas.getContext('2d') as CanvasRenderingContext2D;
             layerCtx.clearRect(0, 0, layerCanvas.width, layerCanvas.height);
             for (let w of layer) {
@@ -42,22 +42,9 @@ function render(camera: Box, windows: CanvasWindow[], canvas: HTMLCanvasElement,
             }
         }
         const layerKey = layerNumber+"";
-        // console.log(cachedLayers)
         if (cachedLayers[layerKey]) {
-            // console.log("me")
-            // console.log(cachedLayers[layerKey].width)
             ctx.drawImage(cachedLayers[layerKey], 0, 0);
         }
-
-
-        
-
-        // ctx.save();
-        // for (let w of layer) {
-        //     w.renderPrimitive(ctx);
-        // }
-        // ctx.restore();
-        // ctx.drawImage(layerCanvas, 0, 0);
     }
     // console.log(cachedLayers)
 }
