@@ -226,4 +226,21 @@ export default [
       typescript({ tsconfig: "./tsconfig.json" }),
       terser()],
   },
+  {
+    input: "src/TimelineController/index.ts", // Entry point of your library
+    output: [
+      {
+        file: "dist/TimelineController/TimelineController.umd.js", // The bundled file
+        format: "umd", // Universal Module Definition (UMD)
+        name: "TimelineController", // Name of the global variable in the browser
+      },
+    ],
+    plugins: [resolve(), commonjs(), 
+      replace({
+        "process.env.NODE_ENV": JSON.stringify("production"), // Replace with "production" or "development"
+        preventAssignment: true, // Required to suppress warnings
+      }),
+      typescript({ tsconfig: "./tsconfig.json" }),
+      terser()],
+  },
 ];
