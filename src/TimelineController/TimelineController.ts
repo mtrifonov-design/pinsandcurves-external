@@ -22,19 +22,21 @@ type SerializedDistributedWorm = {
 
 type DistributedWormEvent = {
     commands: WormCommand[];
-    lastAgreedStateId: string;
-    stateId: string;
+    aStateId: string;
+    bStateId: string;
 }
 
 class DistributedWorm {
     worm: Worm;
     stateId: string;
-    lastAgreedStateId: string;
+    aStateId: string;
+    bStateId: string;
     outgoingCommands: WormCommand[] = [];
     constructor(serialised_dworm: SerializedDistributedWorm) {
         this.worm = w.StateTimeWorm.deserialize(serialised_dworm.worm, transformer);
         this.stateId = serialised_dworm.stateId;
-        this.lastAgreedStateId = serialised_dworm.lastAgreedStateId;
+        this.aStateId = serialised_dworm.stateId;
+        this.bStateId = crypto.randomUUID(); 
         this.outgoingCommands = serialised_dworm.outgoingCommands;
     }
 
@@ -42,35 +44,38 @@ class DistributedWorm {
         return {
             worm: this.worm.serialize(),
             stateId: this.stateId,
-            lastAgreedStateId: this.lastAgreedStateId,
             outgoingCommands: this.outgoingCommands
         };
     }
 
     pushOutgoingCommands(...commands: WormCommand[]) {
-        if (this.outgoingCommands.length === 0) {
-            this.lastAgreedStateId = this.stateId; // memorize the last cleared state id
-            this.stateId = crypto.randomUUID(); // issue a new state id, an "out of sync" state
-        }
+        // if (this.outgoingCommands.length === 0) {
+        //     this.lastAgreedStateId = this.stateId; // memorize the last cleared state id
+        //     this.stateId = crypto.randomUUID(); // issue a new state id, an "out of sync" state
+        // }
         this.outgoingCommands.push(...commands);
     }
 
     transferOutgoingEvent() {
         const event: DistributedWormEvent = {
             commands: this.outgoingCommands,
-            lastAgreedStateId: this.lastAgreedStateId,
-            stateId: this.stateId
+            aStateId: this.aStateId,
+            bStateId: this.bStateId,
         };
+        this.aStateId = this.bStateId;
+        this.bStateId = crypto.randomUUID(); 
         this.outgoingCommands = [];
         return event;
     }
 
     receiveIncomingEvent(e: DistributedWormEvent) {
-        if (e.lastAgreedStateId !== this.stateId) {
+        if (e.aStateId !== this.stateId) {
             throw new Error("Trying to apply commands to a worm that is not in sync");
         }
         this.worm.executeCommands(e.commands);
-        this.stateId = e.stateId; // accept the new state id
+        this.aStateId = e.bStateId;
+        this.bStateId = crypto.randomUUID(); 
+        this.stateId = e.bStateId;
     }
 
 }
@@ -84,7 +89,7 @@ class TimelineController {
 
     static fromProject(project: Project) {
         const worm = new w.StateTimeWorm(project, transformer);
-        const stateId = crypto.randomUUID();
+        const stateId = "initialState";
         const serialized_dworm: SerializedDistributedWorm = {
             worm: worm.serialize(),
             stateId,
@@ -127,7 +132,7 @@ class TimelineController {
     private pushCommand(commandFunction: () => w.WormCommand<Instruction>) {
         try {
             const command = commandFunction();
-            this.dworm.worm.executeCommand(command);
+            //this.dworm.worm.executeCommand(command);
             this.dworm.pushOutgoingCommands(command);
         } catch (e) {
             console.error(e);
@@ -137,7 +142,7 @@ class TimelineController {
     private pushCommands(commandsFunction: () => w.WormCommand<Instruction>[]) {
         try {
             const commands = commandsFunction();
-            this.dworm.worm.executeCommands(commands);
+            //this.dworm.worm.executeCommands(commands);
             this.dworm.pushOutgoingCommands(...commands);
         } catch (e) {
             console.error(e);
