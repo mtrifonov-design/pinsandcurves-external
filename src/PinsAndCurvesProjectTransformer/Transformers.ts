@@ -343,6 +343,8 @@ function updateFramesPerSecond(draft: Project, instruction: InstructionTypes['up
 
 function updatePlayheadPosition(draft: Project, instruction: InstructionTypes['updatePlayheadPosition']) {
     const { playheadPosition } = instruction;
+    const playing = draft.timelineData.playing;
+    if (playing) throw new Error(`Cannot update playhead position while playing`);
     if (playheadPosition < 0 || playheadPosition > draft.timelineData.numberOfFrames) throw new Error(`Playhead position must be between 0 and ${draft.timelineData.numberOfFrames}`);
     draft.timelineData.playheadPosition = playheadPosition;
 }
@@ -374,8 +376,9 @@ function updateFocusRange(draft: Project, instruction: InstructionTypes['updateF
 }
 
 function updatePlaying(draft: Project, instruction: InstructionTypes['updatePlaying']) {
-    const { playing } = instruction;
+    const { playing, playingTimestamp } = instruction;
     draft.timelineData.playing = playing;
+    draft.timelineData.playingTimestamp = playingTimestamp;
 }
 
 function addCurveTemplate(draft: Project, instruction: InstructionTypes['addCurveTemplate']) {

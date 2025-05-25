@@ -670,6 +670,29 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
         },
         updatePlayheadPosition(playheadPosition: number, commit?: boolean) : void {
             if (commit) returnToCommit()
+            const project = getProject();
+            const playing = project.timelineData.playing;
+            if (playing) {
+                pushCommand(() => {
+
+                    return {
+                    type: 'addNextState',
+                    forward: [
+                        {
+                            type: "updatePlaying",
+                            playing: false,
+                            playingTimestamp: 0
+                        }
+                    ],
+                    backward: [
+                        {
+                            type: "updatePlaying",
+                            playing: playing,
+                            playingTimestamp: project.timelineData.playingTimestamp
+                        }
+                    ]
+                }})
+            }
             pushCommand(() => {
                 const project = getProject();
                 return {
@@ -690,39 +713,65 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
             if (commit) {pushCommit()}
             pushUpdate()
         },
-        playNextFrame(nextFrame : number) : void {
-            const project = getProject();
-            const playheadPosition = project.timelineData.playheadPosition;
-            const [start,stop] = project.timelineData.focusRange;
-            const duration = stop - start;
-            const newPlayheadPosition = ((playheadPosition + 1)-start)%duration + start;
+        startPlayback() : void {
             returnToCommit()
             pushCommand(() => {
+                const project = getProject();
                 return {
                 type: 'addNextState',
                 forward: [
                     {
                         type: 'updatePlaying',
-                        playing: true
-                    },
-                    {
-                        type: 'updatePlayheadPosition',
-                        playheadPosition: nextFrame
+                        playing: true,
+                        playingTimestamp: Date.now()
                     }
                 ],
                 backward: [
                     {
-                        type: 'updatePlayheadPosition',
-                        playheadPosition
-                    },
-                    {
                         type: 'updatePlaying',
-                        playing: false
-                    },
+                        playing: false,
+                        playingTimestamp: project.timelineData.playingTimestamp
+                    }
                 ]
             }})
+            pushCommit()
             pushUpdate()
         },
+        
+
+        // playNextFrame(nextFrame : number) : void {
+        //     const project = getProject();
+        //     const playheadPosition = project.timelineData.playheadPosition;
+        //     const [start,stop] = project.timelineData.focusRange;
+        //     const duration = stop - start;
+        //     const newPlayheadPosition = ((playheadPosition + 1)-start)%duration + start;
+        //     returnToCommit()
+        //     pushCommand(() => {
+        //         return {
+        //         type: 'addNextState',
+        //         forward: [
+        //             {
+        //                 type: 'updatePlaying',
+        //                 playing: true
+        //             },
+        //             {
+        //                 type: 'updatePlayheadPosition',
+        //                 playheadPosition: nextFrame
+        //             }
+        //         ],
+        //         backward: [
+        //             {
+        //                 type: 'updatePlayheadPosition',
+        //                 playheadPosition
+        //             },
+        //             {
+        //                 type: 'updatePlaying',
+        //                 playing: false
+        //             },
+        //         ]
+        //     }})
+        //     pushUpdate()
+        // },
         updateFocusRange(range: [number, number]) : void {
             const [start, end] = range;
             returnToCommit()

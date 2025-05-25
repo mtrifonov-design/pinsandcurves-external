@@ -4,7 +4,6 @@ import { PACProjectController, Project, Instruction, ProjectNodeEventDispatcher 
 import constructProjectTools from './ConstructProjectTools';
 import { ProjectNodeEvent } from "../ProjectNode";
 
-
 const HostProjectNode = ProjectNode.HostProjectNode;
 const ClientProjectNode = ProjectNode.ClientProjectNode;
 const transformer: (p: Project, i: Instruction[]) => Project = PinsAndCurvesProjectTransformer.PinsAndCurvesProjectTransformer;
@@ -85,6 +84,56 @@ class TimelineController {
     dworm: DistributedWorm;
     constructor(serialized_dworm: SerializedDistributedWorm) {
         this.dworm = new DistributedWorm(serialized_dworm);
+        this.project = this.processProject(this.dworm.worm.content);
+        if (window && ("requestAnimationFrame" in window)) this.playingLoop();
+        this.onTimelineUpdate(() => {
+            const project = this.processProject(this.dworm.worm.content);
+            this.project = project;
+        })
+    }
+
+    // --> CONTINUE HERE <--
+    lastFrame = 0;
+    playingLoop() {
+        const playing = this.project.timelineData.playing;
+        if (playing) {
+            //this.project = this.processProject(this.dworm.worm.content);
+            const project = this.processProject(this.dworm.worm.content);
+            const currentFrame = project.timelineData.playheadPosition;
+            if (currentFrame !== this.lastFrame) {
+                this.lastFrame = currentFrame;
+                this.onTimelineUpdateCallbacks.forEach((callback) => callback());
+            }
+            // this.pushUpdate();
+        }
+        window.requestAnimationFrame(() => this.playingLoop());
+    }
+
+
+    private processProject(project: Project) {
+        const playing = project.timelineData.playing;
+        const playingTimestamp = project.timelineData.playingTimestamp;
+        if (playing) {
+            // If the project is playing, we need to set the playhead position to the current frame
+            const elapsedFrames = Math.floor((Date.now() - playingTimestamp) / (1000 / project.timelineData.framesPerSecond));
+            let playheadPosition = project.timelineData.playheadPosition;
+            const [rangeStart, rangeEnd] = project.timelineData.focusRange;
+            if (playheadPosition < rangeStart || playheadPosition > rangeEnd) {
+                playheadPosition = rangeStart;
+            }
+            let currentFrame = playheadPosition + elapsedFrames;
+            currentFrame -= rangeStart;
+            currentFrame = currentFrame % (rangeEnd - rangeStart);
+            currentFrame += rangeStart;
+            project = {
+                ...project,
+                timelineData: {
+                    ...project.timelineData,
+                    playheadPosition: currentFrame,
+                },
+            };
+        }
+        return project;
     }
 
     static fromProject(project: Project) {
@@ -169,8 +218,9 @@ class TimelineController {
         return constructProjectTools(pushUpdate, pushCommand, pushCommands, getProject);
     }
 
+    project : Project
     getProject() {
-        return this.dworm.worm.content;
+        return this.project;
     }
 
     prettyPrintProject() {
@@ -182,8 +232,6 @@ class TimelineController {
         const result = InterpolateSignalValue.interpolateSignalValue(project, signalId, frame);
         return result;
     }
-
-
 }
 
 

@@ -74,7 +74,6 @@ class ProjectBuilder {
             pinValues: {},
             defaultValue: 'default value',
             displayValues: true,
-            
         };
     }
     addContinuousSignal(signalId: string, signalName: string, range: [number,number]) {
@@ -146,12 +145,13 @@ class ProjectBuilder {
             signal.pinValues[pinId] = pinValue as string;
         }
     }
-    setTimelineData(numberOfFrames: number, framesPerSecond: number, playheadPosition: number) {
+    setTimelineData(numberOfFrames: number, framesPerSecond: number, playheadPosition: number, focusRange?: [number, number]) {
         this._project.timelineData = {
             ...this._project.timelineData,
             numberOfFrames,
             framesPerSecond,
-            playheadPosition
+            playheadPosition,
+            focusRange: focusRange || this._project.timelineData.focusRange,
         }
     }
     setSignalActiveStatus(signalId: string, active: boolean) {

@@ -51,7 +51,7 @@ interface ProjectTools {
     updateSignalIndex: (signalId: string, index: number, commit?: boolean) => void;
     updateSignalActiveStatus: (signalId: string, active: boolean) => void;
     updateFramesPerSecond: (framesPerSecond: number) => void;
-    playNextFrame: (nextFrame: number) => void;
+    // playNextFrame: (nextFrame: number) => void;
     updatePlayheadPosition: (playheadPosition: number, commit?: boolean) => void;
     updateNumberOfFrames: (numberOfFrames: number) => void;
     updateProjectName: (projectName: string) => void;
@@ -63,6 +63,8 @@ interface ProjectTools {
     addCurveTemplate: (curveId: string, functionString: string) => void;
     deleteCurveTemplate: (curveId: string) => void;
     updateCurveTemplate: (curveId: string, functionString: string) => void;
+
+    startPlayback: () => void;
 }
 
 interface PACProjectController {

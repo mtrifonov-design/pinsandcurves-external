@@ -20,7 +20,7 @@ interface TimelineData {
     playheadPosition: number;
     focusRange: [number, number];
     playing: boolean;
-
+    playingTimestamp: number;
 }
 
 type Curve = string;
