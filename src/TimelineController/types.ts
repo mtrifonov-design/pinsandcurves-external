@@ -59,7 +59,7 @@ interface ProjectTools {
     redo: () => void;
     returnToLastCommit: () => void;
     pushUpdate: () => void;
-    updateFocusRange: (focusRange: [number, number]) => void;
+    updateFocusRange: (focusRange: [number, number], commit?: boolean) => void;
     addCurveTemplate: (curveId: string, functionString: string) => void;
     deleteCurveTemplate: (curveId: string) => void;
     updateCurveTemplate: (curveId: string, functionString: string) => void;

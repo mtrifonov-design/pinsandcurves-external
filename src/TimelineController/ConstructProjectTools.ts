@@ -772,9 +772,9 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
         //     }})
         //     pushUpdate()
         // },
-        updateFocusRange(range: [number, number]) : void {
+        updateFocusRange(range: [number, number],commit?:boolean) : void {
             const [start, end] = range;
-            returnToCommit()
+            if (commit) returnToCommit()
             pushCommand(() => {
                 const project = getProject();
                 return {
@@ -792,7 +792,7 @@ function constructProjectTools(pushUpdate: () => void, pushCommand: (w: () => Wo
                     }
                 ]
             }})
-            pushCommit()
+            if (commit) pushCommit()
             pushUpdate()
         },
         updateNumberOfFrames(numberOfFrames: number) : void {
